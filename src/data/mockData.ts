@@ -35,7 +35,7 @@ const generateSeasons = (showId: string, count: number): Season[] => {
 };
 
 // Mock Watch Providers
-const watchProviders = [
+export const watchProviders = [
   {
     id: 'netflix',
     name: 'Netflix',
