@@ -43,6 +43,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
 
   const [newGenre, setNewGenre] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [providerRedirectLink, setProviderRedirectLink] = useState<string>('');
 
   const isEditMode = !!initialContent;
 
@@ -82,12 +83,17 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
     if (selectedProvider) {
       const provider = watchProviders.find(p => p.id === selectedProvider);
       if (provider && !formData.watchProviders?.some(p => p.id === provider.id)) {
+        const newProvider = {
+          ...provider,
+          redirectLink: providerRedirectLink || provider.redirectLink || '',
+        };
         setFormData({
           ...formData,
-          watchProviders: [...(formData.watchProviders || []), provider],
+          watchProviders: [...(formData.watchProviders || []), newProvider],
         });
       }
       setSelectedProvider('');
+      setProviderRedirectLink('');
     }
   };
 
@@ -95,6 +101,15 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
     setFormData({
       ...formData,
       watchProviders: formData.watchProviders?.filter(p => p.id !== providerId),
+    });
+  };
+
+  const handleUpdateProviderRedirectLink = (providerId: string, redirectLink: string) => {
+    setFormData({
+      ...formData,
+      watchProviders: formData.watchProviders?.map(p => 
+        p.id === providerId ? { ...p, redirectLink } : p
+      ),
     });
   };
 
@@ -120,6 +135,14 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
     
     onSave(contentToSave);
   };
+
+  // Initialize provider redirect link when selecting a provider
+  useEffect(() => {
+    if (selectedProvider) {
+      const provider = watchProviders.find(p => p.id === selectedProvider);
+      setProviderRedirectLink(provider?.redirectLink || '');
+    }
+  }, [selectedProvider]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-ott-card p-6 rounded-lg">
@@ -277,26 +300,51 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
           {formData.watchProviders?.map((provider) => (
             <div 
               key={provider.id} 
-              className="flex items-center gap-2 bg-gray-800 px-3 py-1 rounded-full text-sm"
+              className="flex flex-col bg-gray-800 p-3 rounded-lg text-sm w-full"
             >
-              <img 
-                src={provider.logoPath} 
-                alt={provider.name} 
-                className="w-4 h-4 rounded-full"
-              />
-              {provider.name}
-              <button 
-                type="button"
-                onClick={() => handleRemoveProvider(provider.id)}
-                className="ml-2 text-gray-400 hover:text-white"
-              >
-                <XCircle size={14} />
-              </button>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <img 
+                    src={provider.logoPath} 
+                    alt={provider.name} 
+                    className="w-6 h-6 rounded-full"
+                  />
+                  <span className="font-medium">{provider.name}</span>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => handleRemoveProvider(provider.id)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor={`website-${provider.id}`} className="text-xs text-gray-400">Website URL</Label>
+                <Input
+                  id={`website-${provider.id}`}
+                  value={provider.url}
+                  readOnly
+                  className="admin-input text-xs bg-gray-900"
+                />
+                
+                <Label htmlFor={`redirect-${provider.id}`} className="text-xs text-gray-400">App Redirect Link</Label>
+                <Input
+                  id={`redirect-${provider.id}`}
+                  value={provider.redirectLink || ''}
+                  onChange={(e) => handleUpdateProviderRedirectLink(provider.id, e.target.value)}
+                  placeholder="e.g., netflix://title/12345"
+                  className="admin-input text-xs"
+                />
+              </div>
             </div>
           ))}
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 gap-4 border border-gray-700 p-4 rounded-lg">
+          <Label className="text-sm font-medium mb-2">Add Watch Provider</Label>
+          
           <Select 
             value={selectedProvider} 
             onValueChange={setSelectedProvider}
@@ -320,14 +368,31 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
             </SelectContent>
           </Select>
           
+          {selectedProvider && (
+            <div className="space-y-2">
+              <Label htmlFor="providerRedirectLink" className="text-xs text-gray-400">App Redirect Link</Label>
+              <Input
+                id="providerRedirectLink"
+                value={providerRedirectLink}
+                onChange={(e) => setProviderRedirectLink(e.target.value)}
+                placeholder="e.g., netflix://title/12345"
+                className="admin-input"
+              />
+              <p className="text-xs text-gray-500">
+                This is the URL scheme that will open the content in the provider's native app.
+                Example: netflix://title/81260280
+              </p>
+            </div>
+          )}
+          
           <Button 
             type="button"
             onClick={handleAddProvider}
             variant="outline"
-            className="border-gray-700"
+            className="border-gray-700 w-full mt-2"
             disabled={!selectedProvider}
           >
-            <Plus size={16} />
+            <Plus size={16} className="mr-2" /> Add Provider
           </Button>
         </div>
       </div>

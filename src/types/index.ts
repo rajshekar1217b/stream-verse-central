@@ -56,12 +56,7 @@ export interface WatchProvider {
   name: string;
   logoPath: string;
   url: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  contents: Content[];
+  redirectLink?: string; // Added for app redirect links
 }
 
 export type ContentType = 'movie' | 'tv' | 'all';

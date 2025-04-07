@@ -1,4 +1,3 @@
-
 import { Content, Category, Season, Episode } from '@/types';
 
 // Mock Episodes
@@ -41,36 +40,42 @@ export const watchProviders = [
     name: 'Netflix',
     logoPath: 'https://image.tmdb.org/t/p/original/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg',
     url: 'https://www.netflix.com/',
+    redirectLink: 'netflix://title/',
   },
   {
     id: 'prime',
     name: 'Prime Video',
     logoPath: 'https://image.tmdb.org/t/p/original/68MNrwlkpF7WnmNPXLah69CR5cb.jpg',
     url: 'https://www.primevideo.com/',
+    redirectLink: 'amzn://title/',
   },
   {
     id: 'hulu',
     name: 'Hulu',
     logoPath: 'https://image.tmdb.org/t/p/original/giwM8XX4V2AQb9vsoN7yti82tKK.jpg',
     url: 'https://www.hulu.com/',
+    redirectLink: 'hulu://title/',
   },
   {
     id: 'disney',
     name: 'Disney+',
     logoPath: 'https://image.tmdb.org/t/p/original/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg',
     url: 'https://www.disneyplus.com/',
+    redirectLink: 'disneyplus://title/',
   },
   {
     id: 'hbomax',
     name: 'HBO Max',
     logoPath: 'https://image.tmdb.org/t/p/original/aS2zvJWn9mwiCOeaaCkIh4wleZS.jpg',
     url: 'https://www.hbomax.com/',
+    redirectLink: 'hbomax://title/',
   },
   {
     id: 'appletv',
     name: 'Apple TV+',
     logoPath: 'https://image.tmdb.org/t/p/original/6uhKBfmtzFqOcLousHwZuzcrScK.jpg',
     url: 'https://tv.apple.com/',
+    redirectLink: 'appletv://title/',
   }
 ];
 
