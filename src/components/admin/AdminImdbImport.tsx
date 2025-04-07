@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { importFromImdb } from '@/services/api';
 import { Content } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2, Check, X } from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 interface AdminImdbImportProps {
   onImport: (content: Content) => void;
