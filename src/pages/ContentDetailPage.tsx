@@ -1,0 +1,176 @@
+
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getContentById } from '@/services/api';
+import { Content } from '@/types';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import WatchProviders from '@/components/WatchProviders';
+import { PlayCircle, Calendar, Clock, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+const ContentDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [content, setContent] = useState<Content | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!id) {
+      navigate('/');
+      return;
+    }
+
+    const fetchContent = async () => {
+      try {
+        const contentData = await getContentById(id);
+        if (contentData) {
+          setContent(contentData);
+        } else {
+          navigate('/not-found');
+        }
+      } catch (error) {
+        console.error('Error fetching content:', error);
+        navigate('/not-found');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchContent();
+  }, [id, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-ott-background flex items-center justify-center">
+        <div className="animate-pulse">
+          <div className="h-8 w-36 bg-gray-700 rounded mb-4"></div>
+          <div className="h-4 w-48 bg-gray-700 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!content) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-ott-background">
+      <Header />
+
+      <main className="pt-16">
+        {/* Backdrop Image */}
+        <div className="relative h-[60vh] w-full mb-6">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${content.backdropPath})` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-ott-background via-transparent to-transparent" />
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 pb-16">
+          <div className="flex flex-col md:flex-row md:gap-8">
+            {/* Poster */}
+            <div className="md:w-1/4 mb-6 md:mb-0">
+              <div className="rounded-lg overflow-hidden shadow-lg">
+                <img
+                  src={content.posterPath}
+                  alt={content.title}
+                  className="w-full h-auto"
+                />
+              </div>
+
+              {/* Watch Button */}
+              {content.trailerUrl && (
+                <Button
+                  className="w-full mt-4 bg-ott-accent hover:bg-ott-accent/80 text-white"
+                  onClick={() => window.open(content.trailerUrl, '_blank')}
+                >
+                  <PlayCircle className="mr-2 h-5 w-5" />
+                  Watch Trailer
+                </Button>
+              )}
+            </div>
+
+            {/* Content Details */}
+            <div className="md:w-3/4">
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">{content.title}</h1>
+
+              {/* Meta Information */}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6">
+                {content.releaseDate && (
+                  <div className="flex items-center">
+                    <Calendar className="mr-1 h-4 w-4" />
+                    <span>{new Date(content.releaseDate).getFullYear()}</span>
+                  </div>
+                )}
+                {content.duration && (
+                  <div className="flex items-center">
+                    <Clock className="mr-1 h-4 w-4" />
+                    <span>{content.duration}</span>
+                  </div>
+                )}
+                <div className="flex items-center">
+                  <Star className="mr-1 h-4 w-4 text-yellow-500" />
+                  <span>{content.rating}/10</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {content.genres.map((genre, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-gray-800 rounded-full text-xs"
+                    >
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Overview */}
+              <div className="mb-8">
+                <h2 className="text-lg font-medium mb-2">Overview</h2>
+                <p className="text-gray-300">{content.overview}</p>
+              </div>
+
+              {/* Watch Providers */}
+              {content.watchProviders && (
+                <WatchProviders providers={content.watchProviders} />
+              )}
+
+              {/* Cast (if available) */}
+              {content.cast && content.cast.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="text-lg font-medium mb-4">Cast</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {content.cast.map((person) => (
+                      <div key={person.id} className="text-center">
+                        <div className="w-full aspect-square rounded-full overflow-hidden mb-2">
+                          <img
+                            src={person.profilePath || 'https://via.placeholder.com/150'}
+                            alt={person.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <p className="font-medium text-sm">{person.name}</p>
+                        {person.character && (
+                          <p className="text-gray-400 text-xs">{person.character}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default ContentDetailPage;
