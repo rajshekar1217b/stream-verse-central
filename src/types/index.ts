@@ -14,6 +14,29 @@ export interface Content {
   duration?: string;
   status?: string;
   cast?: Person[];
+  seasons?: Season[]; // Added for TV Shows
+}
+
+export interface Season {
+  id: string;
+  name: string;
+  overview?: string;
+  posterPath?: string;
+  airDate?: string;
+  seasonNumber: number;
+  episodeCount: number;
+  episodes?: Episode[];
+}
+
+export interface Episode {
+  id: string;
+  title: string;
+  overview: string;
+  stillPath?: string;
+  airDate?: string;
+  episodeNumber: number;
+  duration?: string;
+  rating?: number;
 }
 
 export interface Genre {

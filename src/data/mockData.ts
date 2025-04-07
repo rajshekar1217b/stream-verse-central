@@ -1,180 +1,294 @@
 
-import { Content, Category } from '@/types';
+import { Content, Category, Season, Episode } from '@/types';
 
-// Mock content data for initial display
+// Mock Episodes
+const generateEpisodes = (seasonId: string, seasonNumber: number, count: number): Episode[] => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `${seasonId}-ep${i + 1}`,
+    title: `Episode ${i + 1}`,
+    overview: `This is the description for Season ${seasonNumber} Episode ${i + 1}. The plot thickens as our characters face new challenges.`,
+    stillPath: `https://picsum.photos/seed/${seasonId}-${i}/800/450`,
+    episodeNumber: i + 1,
+    airDate: new Date(2023, seasonNumber - 1, (i + 1) * 7).toISOString(),
+    duration: `${Math.floor(Math.random() * 15) + 30}m`,
+    rating: parseFloat((Math.random() * 2 + 7).toFixed(1)),
+  }));
+};
+
+// Mock Seasons for TV Shows
+const generateSeasons = (showId: string, count: number): Season[] => {
+  return Array.from({ length: count }, (_, i) => {
+    const seasonId = `${showId}-s${i + 1}`;
+    const episodeCount = Math.floor(Math.random() * 6) + 8;
+    
+    return {
+      id: seasonId,
+      name: `Season ${i + 1}`,
+      overview: i === 0 ? 'The first season introduces the main characters and setting.' : `Season ${i + 1} continues the story with new challenges.`,
+      posterPath: `https://picsum.photos/seed/${seasonId}/300/450`,
+      seasonNumber: i + 1,
+      episodeCount: episodeCount,
+      airDate: new Date(2022 + i, 0, 1).toISOString(),
+      episodes: generateEpisodes(seasonId, i + 1, episodeCount),
+    };
+  });
+};
+
+// Mock Watch Providers
+const watchProviders = [
+  {
+    id: 'netflix',
+    name: 'Netflix',
+    logoPath: 'https://image.tmdb.org/t/p/original/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg',
+    url: 'https://www.netflix.com/',
+  },
+  {
+    id: 'prime',
+    name: 'Prime Video',
+    logoPath: 'https://image.tmdb.org/t/p/original/68MNrwlkpF7WnmNPXLah69CR5cb.jpg',
+    url: 'https://www.primevideo.com/',
+  },
+  {
+    id: 'hulu',
+    name: 'Hulu',
+    logoPath: 'https://image.tmdb.org/t/p/original/giwM8XX4V2AQb9vsoN7yti82tKK.jpg',
+    url: 'https://www.hulu.com/',
+  },
+  {
+    id: 'disney',
+    name: 'Disney+',
+    logoPath: 'https://image.tmdb.org/t/p/original/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg',
+    url: 'https://www.disneyplus.com/',
+  },
+  {
+    id: 'hbomax',
+    name: 'HBO Max',
+    logoPath: 'https://image.tmdb.org/t/p/original/aS2zvJWn9mwiCOeaaCkIh4wleZS.jpg',
+    url: 'https://www.hbomax.com/',
+  },
+  {
+    id: 'appletv',
+    name: 'Apple TV+',
+    logoPath: 'https://image.tmdb.org/t/p/original/6uhKBfmtzFqOcLousHwZuzcrScK.jpg',
+    url: 'https://tv.apple.com/',
+  }
+];
+
+// Mock Content
 export const mockContents: Content[] = [
+  // Movies
   {
-    id: "1",
-    title: "Stranger Things",
-    overview: "When a young boy disappears, his mother, a police chief and his friends must confront terrifying supernatural forces in order to get him back.",
-    posterPath: "https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg",
-    backdropPath: "https://image.tmdb.org/t/p/original/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
-    releaseDate: "2016-07-15",
-    type: "tv",
-    genres: ["Drama", "Fantasy", "Sci-Fi"],
-    rating: 8.6,
-    watchProviders: [
-      {
-        id: "1",
-        name: "Netflix",
-        logoPath: "https://image.tmdb.org/t/p/w500/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg",
-        url: "https://www.netflix.com/",
-      }
-    ],
-  },
-  {
-    id: "2",
-    title: "The Witcher",
-    overview: "Geralt of Rivia, a solitary monster hunter, struggles to find his place in a world where people often prove more wicked than beasts.",
-    posterPath: "https://image.tmdb.org/t/p/w500/7vjaCdMw15FEbXyLQTVa04URsPm.jpg",
-    backdropPath: "https://image.tmdb.org/t/p/original/hQW4dwXiUFVf6LiLzA9YGbzl4AF.jpg",
-    releaseDate: "2019-12-20",
-    type: "tv",
-    genres: ["Action", "Adventure", "Fantasy"],
-    rating: 8.2,
-    watchProviders: [
-      {
-        id: "1",
-        name: "Netflix",
-        logoPath: "https://image.tmdb.org/t/p/w500/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg",
-        url: "https://www.netflix.com/",
-      }
-    ],
-  },
-  {
-    id: "3",
-    title: "Dune",
-    overview: "Paul Atreides, a brilliant and gifted young man born into a great destiny beyond his understanding, must travel to the most dangerous planet in the universe to ensure the future of his family and his people.",
-    posterPath: "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
-    backdropPath: "https://image.tmdb.org/t/p/original/zSJZ1w3y50Lk0IgRZNrVplq0Ifk.jpg",
-    releaseDate: "2021-10-22",
-    type: "movie",
-    genres: ["Action", "Adventure", "Sci-Fi"],
-    rating: 8.0,
-    watchProviders: [
-      {
-        id: "2",
-        name: "HBO Max",
-        logoPath: "https://image.tmdb.org/t/p/w500/aS2zvJWn9mwiCOeaaCkIh4wleZS.jpg",
-        url: "https://www.hbomax.com/",
-      }
-    ],
-  },
-  {
-    id: "4",
-    title: "The Mandalorian",
-    overview: "After the fall of the Galactic Empire, lawlessness has spread throughout the galaxy. A lone gunfighter makes his way through the outer reaches, earning his keep as a bounty hunter.",
-    posterPath: "https://image.tmdb.org/t/p/w500/sWgBv7LV2PRoQgkxwlibdGXKz1S.jpg",
-    backdropPath: "https://image.tmdb.org/t/p/original/6RIVvzj4A6DbaIifmUyGAQQ4B9v.jpg", 
-    releaseDate: "2019-11-12",
-    type: "tv",
-    genres: ["Action", "Adventure", "Sci-Fi"],
-    rating: 8.5,
-    watchProviders: [
-      {
-        id: "3",
-        name: "Disney+",
-        logoPath: "https://image.tmdb.org/t/p/w500/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg",
-        url: "https://www.disneyplus.com/",
-      }
-    ],
-  },
-  {
-    id: "5",
-    title: "Avengers: Endgame",
-    overview: "After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' actions and restore balance to the universe.",
-    posterPath: "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
-    backdropPath: "https://image.tmdb.org/t/p/original/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
-    releaseDate: "2019-04-26",
-    type: "movie",
-    genres: ["Action", "Adventure", "Sci-Fi"],
+    id: 'movie-1',
+    title: 'Inception',
+    overview: 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/s3TBrRGB1iav7gFOCNx3H31MoES.jpg',
+    releaseDate: '2010-07-16',
+    type: 'movie',
+    genres: ['Action', 'Science Fiction', 'Adventure'],
     rating: 8.4,
-    watchProviders: [
-      {
-        id: "3",
-        name: "Disney+",
-        logoPath: "https://image.tmdb.org/t/p/w500/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg",
-        url: "https://www.disneyplus.com/",
-      }
+    duration: '2h 28m',
+    status: 'Released',
+    trailerUrl: 'https://www.youtube.com/watch?v=YoHD9XEInc0',
+    watchProviders: [watchProviders[0], watchProviders[1]],
+    cast: [
+      { id: 'person-1', name: 'Leonardo DiCaprio', character: 'Dom Cobb', profilePath: 'https://image.tmdb.org/t/p/w500/wo2hJpn04vbtmh0B9utCFdsQhxM.jpg' },
+      { id: 'person-2', name: 'Joseph Gordon-Levitt', character: 'Arthur', profilePath: 'https://image.tmdb.org/t/p/w500/1P2FLQXgbXeIla5Y3JzKRov3ASF.jpg' },
+      { id: 'person-3', name: 'Ellen Page', character: 'Ariadne', profilePath: 'https://image.tmdb.org/t/p/w500/8G8V1E5Gw0pU3a4hCbyTyxOxuS7.jpg' },
+      { id: 'person-4', name: 'Tom Hardy', character: 'Eames', profilePath: 'https://image.tmdb.org/t/p/w500/d81K0RH8UX7tZj49tZaQhZ9ewH.jpg' },
     ],
   },
   {
-    id: "6",
-    title: "The Queen's Gambit",
-    overview: "In a Kentucky orphanage in the 1950s, a young girl discovers an astonishing talent for chess while struggling with addiction.",
-    posterPath: "https://image.tmdb.org/t/p/w500/zU0htwkhNvBQdVSIKB9s6hgVeFK.jpg",
-    backdropPath: "https://image.tmdb.org/t/p/original/34OGjFEbHj0E3lE2w0iTUVq0CBz.jpg",
-    releaseDate: "2020-10-23",
-    type: "tv",
-    genres: ["Drama"],
+    id: 'movie-2',
+    title: 'The Shawshank Redemption',
+    overview: 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg',
+    releaseDate: '1994-09-23',
+    type: 'movie',
+    genres: ['Drama', 'Crime'],
+    rating: 8.7,
+    duration: '2h 22m',
+    status: 'Released',
+    watchProviders: [watchProviders[1], watchProviders[4]],
+  },
+  {
+    id: 'movie-3',
+    title: 'Pulp Fiction',
+    overview: 'The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine in four tales of violence and redemption.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/suaEOtk1N1sgg2MTM7oZd2cfVp3.jpg',
+    releaseDate: '1994-09-10',
+    type: 'movie',
+    genres: ['Thriller', 'Crime'],
+    rating: 8.5,
+    duration: '2h 34m',
+    status: 'Released',
+    watchProviders: [watchProviders[2], watchProviders[0]],
+  },
+  {
+    id: 'movie-4',
+    title: 'The Dark Knight',
+    overview: 'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/nMKdUUepR0i5zn0y1T4CsSB5chy.jpg',
+    releaseDate: '2008-07-18',
+    type: 'movie',
+    genres: ['Action', 'Crime', 'Drama', 'Thriller'],
+    rating: 9.0,
+    duration: '2h 32m',
+    status: 'Released',
+    watchProviders: [watchProviders[3], watchProviders[1]],
+  },
+  {
+    id: 'movie-5',
+    title: 'Interstellar',
+    overview: 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity\'s survival.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/xJHokMbljvjADYdit5fK5VQsXEG.jpg',
+    releaseDate: '2014-11-07',
+    type: 'movie',
+    genres: ['Adventure', 'Drama', 'Science Fiction'],
+    rating: 8.4,
+    duration: '2h 49m',
+    status: 'Released',
+    trailerUrl: 'https://www.youtube.com/watch?v=zSWdZVtXT7E',
+    watchProviders: [watchProviders[0], watchProviders[2], watchProviders[3]],
+  },
+  {
+    id: 'movie-6',
+    title: 'Parasite',
+    overview: 'All unemployed, Ki-taek and his family take peculiar interest in the wealthy and glamorous Parks, as they ingratiate themselves into their lives and get entangled in an unexpected incident.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/ApiBzeaa95TNYliSbQ8pJv4Fje7.jpg',
+    releaseDate: '2019-05-30',
+    type: 'movie',
+    genres: ['Comedy', 'Thriller', 'Drama'],
     rating: 8.6,
-    watchProviders: [
-      {
-        id: "1",
-        name: "Netflix",
-        logoPath: "https://image.tmdb.org/t/p/w500/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg",
-        url: "https://www.netflix.com/",
-      }
-    ],
+    duration: '2h 12m',
+    status: 'Released',
+    watchProviders: [watchProviders[4], watchProviders[5]],
+  },
+  
+  // TV Shows
+  {
+    id: 'tv-1',
+    title: 'Breaking Bad',
+    overview: 'A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine in order to secure his family\'s future.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg',
+    releaseDate: '2008-01-20',
+    type: 'tv',
+    genres: ['Drama', 'Crime'],
+    rating: 8.8,
+    status: 'Ended',
+    trailerUrl: 'https://www.youtube.com/watch?v=HhesaQXLuRY',
+    watchProviders: [watchProviders[0], watchProviders[4]],
+    seasons: generateSeasons('tv-1', 5),
+  },
+  {
+    id: 'tv-2',
+    title: 'Game of Thrones',
+    overview: 'Nine noble families fight for control over the lands of Westeros, while an ancient enemy returns after being dormant for millennia.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/suopoADq0k8YZr4dQXcU6pToj6s.jpg',
+    releaseDate: '2011-04-17',
+    type: 'tv',
+    genres: ['Drama', 'Action & Adventure', 'Sci-Fi & Fantasy'],
+    rating: 8.3,
+    status: 'Ended',
+    watchProviders: [watchProviders[4], watchProviders[1]],
+    seasons: generateSeasons('tv-2', 8),
+  },
+  {
+    id: 'tv-3',
+    title: 'Stranger Things',
+    overview: 'When a young boy disappears, his mother, a police chief, and his friends must confront terrifying supernatural forces in order to get him back.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/56v2KjBlU4XaOv9rVYEQypROD7P.jpg',
+    releaseDate: '2016-07-15',
+    type: 'tv',
+    genres: ['Drama', 'Sci-Fi & Fantasy', 'Mystery'],
+    rating: 8.5,
+    status: 'Returning Series',
+    trailerUrl: 'https://www.youtube.com/watch?v=b9EkMc79ZSU',
+    watchProviders: [watchProviders[0]],
+    seasons: generateSeasons('tv-3', 4),
+  },
+  {
+    id: 'tv-4',
+    title: 'The Mandalorian',
+    overview: 'After the fall of the Galactic Empire, a lone gunfighter makes his way through the lawless galaxy.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/sWgBv7LV2PRoQgkxwlibdGXKz1S.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/o7qi2v4uWQ8bZ1tW3KI0Ztn2epk.jpg',
+    releaseDate: '2019-11-12',
+    type: 'tv',
+    genres: ['Sci-Fi & Fantasy', 'Action & Adventure', 'Western'],
+    rating: 8.4,
+    status: 'Returning Series',
+    watchProviders: [watchProviders[3]],
+    seasons: generateSeasons('tv-4', 3),
+  },
+  {
+    id: 'tv-5',
+    title: 'The Office',
+    overview: 'A mockumentary on a group of typical office workers, where the workday consists of ego clashes, inappropriate behavior, and tedium.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/qWnJzyZhyy74gjpSjIXWmuk0ifX.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/vNpuAxGTl9HsUbHqam4L0YjInQU.jpg',
+    releaseDate: '2005-03-24',
+    type: 'tv',
+    genres: ['Comedy'],
+    rating: 8.5,
+    status: 'Ended',
+    watchProviders: [watchProviders[2], watchProviders[0]],
+    seasons: generateSeasons('tv-5', 9),
+  },
+  {
+    id: 'tv-6',
+    title: 'The Crown',
+    overview: 'The gripping, decades-spanning inside story of Her Majesty Queen Elizabeth II and the Prime Ministers who shaped Britain\'s post-war destiny.',
+    posterPath: 'https://image.tmdb.org/t/p/w500/su8z9xxiW7pVkn43N7kP3kEjpeA.jpg',
+    backdropPath: 'https://image.tmdb.org/t/p/original/YfsmIHirxwmk3rvbHuQEAHUQnZ.jpg',
+    releaseDate: '2016-11-04',
+    type: 'tv',
+    genres: ['Drama'],
+    rating: 8.2,
+    status: 'Returning Series',
+    watchProviders: [watchProviders[0]],
+    seasons: generateSeasons('tv-6', 5),
   },
 ];
 
-// Categories
+// Mock Categories
 export const mockCategories: Category[] = [
   {
-    id: "trending",
-    name: "Trending Now",
-    contents: mockContents.slice(0, 6),
+    id: 'cat-1',
+    name: 'Trending Now',
+    contents: [
+      mockContents[0],
+      mockContents[6], 
+      mockContents[2], 
+      mockContents[8],
+      mockContents[4], 
+      mockContents[10],
+    ]
   },
   {
-    id: "popular",
-    name: "Popular on StreamVerse",
-    contents: mockContents.slice(0, 6).reverse(),
+    id: 'cat-2',
+    name: 'Top Rated Movies',
+    contents: mockContents.filter(content => content.type === 'movie' && content.rating > 8.5)
   },
   {
-    id: "action",
-    name: "Action & Adventure",
-    contents: mockContents.filter(content => 
-      content.genres.includes("Action") || content.genres.includes("Adventure")),
+    id: 'cat-3',
+    name: 'Popular TV Shows',
+    contents: mockContents.filter(content => content.type === 'tv')
   },
   {
-    id: "drama",
-    name: "Drama",
-    contents: mockContents.filter(content => 
-      content.genres.includes("Drama")),
-  },
-  {
-    id: "scifi",
-    name: "Sci-Fi & Fantasy",
-    contents: mockContents.filter(content => 
-      content.genres.includes("Sci-Fi") || content.genres.includes("Fantasy")),
-  },
-];
-
-// Watch Providers
-export const watchProviders = [
-  {
-    id: "1",
-    name: "Netflix",
-    logoPath: "https://image.tmdb.org/t/p/w500/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg",
-    url: "https://www.netflix.com/",
-  },
-  {
-    id: "2", 
-    name: "HBO Max",
-    logoPath: "https://image.tmdb.org/t/p/w500/aS2zvJWn9mwiCOeaaCkIh4wleZS.jpg",
-    url: "https://www.hbomax.com/",
-  },
-  {
-    id: "3",
-    name: "Disney+",
-    logoPath: "https://image.tmdb.org/t/p/w500/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg",
-    url: "https://www.disneyplus.com/",
-  },
-  {
-    id: "4",
-    name: "Amazon Prime Video",
-    logoPath: "https://image.tmdb.org/t/p/w500/68MNrwlkpF7WnmNPXLah69CR5cb.jpg",
-    url: "https://www.primevideo.com/",
-  },
+    id: 'cat-4',
+    name: 'New Releases',
+    contents: mockContents.filter(content => {
+      const releaseDate = new Date(content.releaseDate || '');
+      return releaseDate.getFullYear() >= 2019;
+    })
+  }
 ];
