@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Lock } from 'lucide-react';
+import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -25,8 +26,10 @@ const AdminLoginPage: React.FC = () => {
     setIsLoading(false);
     
     if (success) {
+      toast.success("Login successful");
       navigate('/admin');
     } else {
+      toast.error("Incorrect PIN");
       // Clear input on failure
       setPin('');
     }
@@ -70,6 +73,7 @@ const AdminLoginPage: React.FC = () => {
 
           <div className="mt-6 text-center text-sm text-gray-500">
             <p>This area is restricted to administrators only.</p>
+            <p className="mt-2">(Use PIN: 8579)</p>
           </div>
         </div>
       </main>

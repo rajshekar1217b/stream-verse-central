@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Menu, X, User } from 'lucide-react';
+import { Search, Menu, X, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ThemeToggle from './ThemeToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Header: React.FC = () => {
@@ -39,6 +39,10 @@ const Header: React.FC = () => {
     }
   };
 
+  const navigateToAdmin = () => {
+    navigate('/admin-login');
+  };
+
   return (
     <header
       className={`fixed w-full z-50 transition-colors duration-300 ${
@@ -68,7 +72,7 @@ const Header: React.FC = () => {
             </Link>
           </nav>
 
-          {/* Right side - Search, Theme Toggle, User */}
+          {/* Right side - Search, Admin, User */}
           <div className="flex items-center">
             {/* Search Form */}
             <form onSubmit={handleSearchSubmit} className="relative mr-2">
@@ -88,8 +92,16 @@ const Header: React.FC = () => {
               </button>
             </form>
 
-            {/* Theme Toggle */}
-            <ThemeToggle />
+            {/* Admin Button */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="ml-2" 
+              onClick={navigateToAdmin}
+              title="Admin Dashboard"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
 
             {/* User Icon/Menu */}
             <Button variant="ghost" size="icon" className="ml-2">
