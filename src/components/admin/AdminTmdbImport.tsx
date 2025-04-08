@@ -4,7 +4,7 @@ import { importFromTmdb } from '@/services/api';
 import { Content } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, Check, X } from 'lucide-react';
+import { Search, Loader2, Check, X, Film, Tv } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AdminTmdbImportProps {
@@ -53,6 +53,12 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
     setTmdbId('');
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
   return (
     <div className="bg-ott-card p-6 rounded-lg mb-8">
       <h2 className="text-xl font-bold mb-4">Import from TMDB</h2>
@@ -60,7 +66,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       {!importedContent ? (
         <div className="space-y-4">
           <p className="text-gray-400 text-sm">
-            Enter a TMDB ID to import content details directly from The Movie Database.
+            Enter a TMDB ID to import content details directly from The Movie Database API.
           </p>
           
           <div className="flex gap-2">
@@ -68,7 +74,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               type="text"
               value={tmdbId}
               onChange={(e) => setTmdbId(e.target.value)}
-              placeholder="e.g. 550 (Fight Club)"
+              placeholder="e.g. 550 (Fight Club), 1399 (Game of Thrones)"
               className="admin-input"
             />
             
@@ -91,18 +97,35 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       ) : (
         <div className="space-y-4">
           <div className="flex items-start gap-4">
-            <img 
-              src={importedContent.posterPath} 
-              alt={importedContent.title}
-              className="w-20 h-30 object-cover rounded"
-            />
+            <div className="w-36 shrink-0">
+              <img 
+                src={importedContent.posterPath} 
+                alt={importedContent.title}
+                className="w-full h-auto object-cover rounded"
+              />
+            </div>
             
             <div className="flex-1">
-              <h3 className="font-bold">{importedContent.title}</h3>
-              <p className="text-sm text-gray-400 line-clamp-2">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-lg">{importedContent.title}</h3>
+                {importedContent.type === 'movie' ? (
+                  <Film className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <Tv className="h-4 w-4 text-gray-400" />
+                )}
+              </div>
+              
+              <div className="text-sm text-gray-400 mb-2">
+                {importedContent.type === 'movie' ? 'Movie' : 'TV Series'} • 
+                {importedContent.type === 'movie' && importedContent.duration && ` ${importedContent.duration} • `}
+                {formatDate(importedContent.releaseDate)}
+              </div>
+              
+              <p className="text-sm text-gray-300 line-clamp-3 mb-3">
                 {importedContent.overview}
               </p>
-              <div className="flex flex-wrap gap-2 mt-2">
+              
+              <div className="flex flex-wrap gap-2 mb-2">
                 {importedContent.genres.map((genre, i) => (
                   <span 
                     key={i} 
@@ -112,6 +135,18 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
                   </span>
                 ))}
               </div>
+              
+              {importedContent.type === 'tv' && importedContent.seasons && (
+                <div className="text-xs text-gray-400 mt-1">
+                  {importedContent.seasons.length} {importedContent.seasons.length === 1 ? 'Season' : 'Seasons'}
+                </div>
+              )}
+              
+              {importedContent.trailerUrl && (
+                <div className="text-xs text-blue-400 mt-1">
+                  Trailer available
+                </div>
+              )}
             </div>
           </div>
           

@@ -1,4 +1,3 @@
-
 import { Content, Category } from '@/types';
 import { mockContents, mockCategories } from '@/data/mockData';
 
@@ -63,28 +62,129 @@ export const deleteContent = (id: string): Promise<boolean> => {
   return Promise.resolve(true);
 };
 
-// TMDB import function (changed from IMDb)
+// TMDB import function with real API integration
 export const importFromTmdb = async (tmdbId: string): Promise<Content | null> => {
-  // In a real app, this would connect to TMDB API or proxy
   console.log('Importing from TMDB ID:', tmdbId);
   
-  // Simulating an API call delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Return a mock content based on the ID
-      const mockImport: Content = {
-        id: `imported-${tmdbId}`,
-        title: `Imported TMDB Title ${tmdbId}`,
-        overview: "This content was imported from TMDB (The Movie Database).",
-        posterPath: "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
-        backdropPath: "https://image.tmdb.org/t/p/original/zSJZ1w3y50Lk0IgRZNrVplq0Ifk.jpg",
-        releaseDate: "2023-01-01",
-        type: "movie",
-        genres: ["Action", "Drama"],
-        rating: 7.5,
-        trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      };
-      resolve(mockImport);
-    }, 1000);
-  });
+  // TMDB API configuration
+  const API_KEY = "bc7e2dc86a85f194da52360ed092f9cc";
+  const API_READ_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiYzdlMmRjODZhODVmMTk0ZGE1MjM2MGVkMDkyZjljYyIsInN1YiI6IjYxYzUzZGQ3YjA0MjI4MDA2MTM1Y2MxOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.3VvMqEM8DbOVNZjxgKiHBVPXhpyhEPzXgIJ_NuArOvU";
+  
+  try {
+    // First, try to detect if it's a movie or TV show
+    let movieData = null;
+    let tvData = null;
+    let contentType: 'movie' | 'tv' = 'movie';
+    let contentDetails = null;
+    
+    // Try movie endpoint first
+    const movieResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`);
+    
+    if (movieResponse.ok) {
+      movieData = await movieResponse.json();
+      contentType = 'movie';
+      contentDetails = movieData;
+    } else {
+      // If not a movie, try TV show endpoint
+      const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`);
+      
+      if (tvResponse.ok) {
+        tvData = await tvResponse.json();
+        contentType = 'tv';
+        contentDetails = tvData;
+      } else {
+        // Neither movie nor TV show found
+        console.error('Content not found on TMDB');
+        return null;
+      }
+    }
+    
+    if (!contentDetails) return null;
+    
+    // Extract trailer URL if available
+    let trailerUrl = '';
+    if (contentDetails.videos && contentDetails.videos.results && contentDetails.videos.results.length > 0) {
+      const trailer = contentDetails.videos.results.find((video: any) => 
+        video.type === 'Trailer' && video.site === 'YouTube'
+      ) || contentDetails.videos.results[0];
+      
+      if (trailer) {
+        trailerUrl = `https://www.youtube.com/embed/${trailer.key}`;
+      }
+    }
+    
+    // Extract genres
+    const genres = contentDetails.genres.map((genre: any) => genre.name);
+    
+    // Get seasons data for TV shows
+    let seasons = undefined;
+    if (contentType === 'tv' && contentDetails.seasons) {
+      seasons = await Promise.all(contentDetails.seasons.map(async (season: any) => {
+        // Fetch detailed season info including episodes
+        const seasonResponse = await fetch(
+          `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${API_KEY}`
+        );
+        
+        if (!seasonResponse.ok) return null;
+        
+        const seasonData = await seasonResponse.json();
+        
+        const episodes = seasonData.episodes.map((episode: any) => ({
+          id: `${tmdbId}-s${season.season_number}-e${episode.episode_number}`,
+          title: episode.name,
+          overview: episode.overview || 'No description available.',
+          stillPath: episode.still_path 
+            ? `https://image.tmdb.org/t/p/w500${episode.still_path}` 
+            : 'https://via.placeholder.com/500x281?text=No+Image',
+          episodeNumber: episode.episode_number,
+          airDate: episode.air_date,
+          duration: '30m', // TMDB doesn't provide episode duration
+          rating: episode.vote_average || 0,
+        }));
+        
+        return {
+          id: `${tmdbId}-s${season.season_number}`,
+          name: season.name,
+          overview: season.overview || seasonData.overview || 'No description available.',
+          posterPath: season.poster_path 
+            ? `https://image.tmdb.org/t/p/w500${season.poster_path}`
+            : 'https://via.placeholder.com/500x750?text=No+Image',
+          seasonNumber: season.season_number,
+          episodeCount: episodes.length,
+          airDate: season.air_date,
+          episodes: episodes
+        };
+      }));
+      
+      // Filter out null seasons (in case any season fetch failed)
+      seasons = seasons.filter(season => season !== null);
+    }
+    
+    // Create content object based on TMDB data
+    const content: Content = {
+      id: `tmdb-${contentDetails.id}`,
+      title: contentType === 'movie' ? contentDetails.title : contentDetails.name,
+      overview: contentDetails.overview || 'No overview available.',
+      posterPath: contentDetails.poster_path 
+        ? `https://image.tmdb.org/t/p/w500${contentDetails.poster_path}`
+        : 'https://via.placeholder.com/500x750?text=No+Image',
+      backdropPath: contentDetails.backdrop_path
+        ? `https://image.tmdb.org/t/p/original${contentDetails.backdrop_path}`
+        : 'https://via.placeholder.com/1920x1080?text=No+Image',
+      releaseDate: contentType === 'movie' ? contentDetails.release_date : contentDetails.first_air_date,
+      type: contentType,
+      genres: genres,
+      rating: contentDetails.vote_average || 0,
+      trailerUrl: trailerUrl,
+      status: contentDetails.status,
+      seasons: seasons,
+      duration: contentType === 'movie' ? `${Math.floor(contentDetails.runtime / 60)}h ${contentDetails.runtime % 60}m` : undefined,
+    };
+    
+    return content;
+    
+  } catch (error) {
+    console.error('Error importing from TMDB:', error);
+    return null;
+  }
 };
