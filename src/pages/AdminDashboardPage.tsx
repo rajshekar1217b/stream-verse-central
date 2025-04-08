@@ -12,7 +12,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminContentList from '@/components/admin/AdminContentList';
 import AdminContentForm from '@/components/admin/AdminContentForm';
-import AdminImdbImport from '@/components/admin/AdminImdbImport';
+import AdminTmdbImport from '@/components/admin/AdminTmdbImport';
 
 const AdminDashboardPage: React.FC = () => {
   const [contents, setContents] = useState<Content[]>([]);
@@ -61,11 +61,11 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
   
-  // Handler for updating content
+  // Handler for updating content - fixed to properly update state
   const handleUpdateContent = async (updatedContent: Content) => {
     try {
-      await updateContent(updatedContent);
-      setContents(contents.map(c => c.id === updatedContent.id ? updatedContent : c));
+      const result = await updateContent(updatedContent);
+      setContents(contents.map(c => c.id === result.id ? result : c));
       setIsFormVisible(false);
       setSelectedContent(undefined);
       toast.success('Content updated successfully');
@@ -100,7 +100,7 @@ const AdminDashboardPage: React.FC = () => {
   
   // Handler for editing content
   const handleEditContent = (content: Content) => {
-    setSelectedContent(content);
+    setSelectedContent({...content}); // Create a copy to prevent reference issues
     setIsFormVisible(true);
   };
   
@@ -110,8 +110,8 @@ const AdminDashboardPage: React.FC = () => {
     navigate('/');
   };
   
-  // Handler for importing content from IMDb
-  const handleImdbImport = (importedContent: Content) => {
+  // Handler for importing content from TMDB
+  const handleTmdbImport = (importedContent: Content) => {
     setContents([...contents, importedContent]);
     toast.success(`"${importedContent.title}" imported successfully`);
   };
@@ -156,8 +156,8 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
         
-        {/* IMDb Import Section */}
-        <AdminImdbImport onImport={handleImdbImport} />
+        {/* TMDB Import Section */}
+        <AdminTmdbImport onImport={handleTmdbImport} />
         
         {/* Content Form (visible when adding/editing) */}
         {isFormVisible && (

@@ -63,25 +63,26 @@ export const deleteContent = (id: string): Promise<boolean> => {
   return Promise.resolve(true);
 };
 
-// IMDb import function (admin only)
-export const importFromImdb = async (imdbId: string): Promise<Content | null> => {
-  // In a real app, this would connect to an IMDb API or proxy
-  console.log('Importing from IMDb ID:', imdbId);
+// TMDB import function (changed from IMDb)
+export const importFromTmdb = async (tmdbId: string): Promise<Content | null> => {
+  // In a real app, this would connect to TMDB API or proxy
+  console.log('Importing from TMDB ID:', tmdbId);
   
   // Simulating an API call delay
   return new Promise((resolve) => {
     setTimeout(() => {
       // Return a mock content based on the ID
       const mockImport: Content = {
-        id: `imported-${imdbId}`,
-        title: `Imported Title ${imdbId}`,
-        overview: "This content was imported from IMDb.",
+        id: `imported-${tmdbId}`,
+        title: `Imported TMDB Title ${tmdbId}`,
+        overview: "This content was imported from TMDB (The Movie Database).",
         posterPath: "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
         backdropPath: "https://image.tmdb.org/t/p/original/zSJZ1w3y50Lk0IgRZNrVplq0Ifk.jpg",
         releaseDate: "2023-01-01",
         type: "movie",
         genres: ["Action", "Drama"],
         rating: 7.5,
+        trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       };
       resolve(mockImport);
     }, 1000);

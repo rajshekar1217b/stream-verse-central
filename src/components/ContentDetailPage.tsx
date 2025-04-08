@@ -9,11 +9,13 @@ import WatchProviders from '@/components/WatchProviders';
 import TVShowSeasons from '@/components/TVShowSeasons';
 import { PlayCircle, Calendar, Clock, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const ContentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [content, setContent] = useState<Content | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [trailerOpen, setTrailerOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,6 +58,25 @@ const ContentDetailPage: React.FC = () => {
     return null;
   }
 
+  // Format YouTube URL for embedding if it's a YouTube URL
+  const getEmbedUrl = (url: string | undefined) => {
+    if (!url) return '';
+    
+    // Handle YouTube URLs
+    if (url.includes('youtube.com/watch')) {
+      const videoId = new URL(url).searchParams.get('v');
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    }
+    
+    // Handle YouTube short URLs
+    if (url.includes('youtu.be')) {
+      const videoId = url.split('/').pop();
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    }
+    
+    return url; // Return as is if not YouTube or already an embed URL
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -84,15 +105,32 @@ const ContentDetailPage: React.FC = () => {
                 />
               </div>
 
-              {/* Watch Button */}
+              {/* Watch Trailer Button with Dialog */}
               {content.trailerUrl && (
-                <Button
-                  className="w-full mt-4 bg-primary hover:bg-primary/80"
-                  onClick={() => window.open(content.trailerUrl, '_blank')}
-                >
-                  <PlayCircle className="mr-2 h-5 w-5" />
-                  Watch Trailer
-                </Button>
+                <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      className="w-full mt-4 bg-primary hover:bg-primary/80"
+                    >
+                      <PlayCircle className="mr-2 h-5 w-5" />
+                      Watch Trailer
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>{content.title} - Official Trailer</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4 aspect-video w-full">
+                      <iframe
+                        src={getEmbedUrl(content.trailerUrl)}
+                        className="w-full h-full"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        title={`${content.title} Trailer`}
+                      ></iframe>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               )}
               
               {/* Watch Providers */}

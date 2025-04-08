@@ -1,34 +1,35 @@
+
 import React, { useState } from 'react';
-import { importFromImdb } from '@/services/api';
+import { importFromTmdb } from '@/services/api';
 import { Content } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface AdminImdbImportProps {
+interface AdminTmdbImportProps {
   onImport: (content: Content) => void;
 }
 
-const AdminImdbImport: React.FC<AdminImdbImportProps> = ({ onImport }) => {
-  const [imdbId, setImdbId] = useState('');
+const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
+  const [tmdbId, setTmdbId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [importedContent, setImportedContent] = useState<Content | null>(null);
 
   const handleImport = async () => {
-    if (!imdbId.trim()) {
-      toast.error('Please enter an IMDb ID');
+    if (!tmdbId.trim()) {
+      toast.error('Please enter a TMDB ID');
       return;
     }
 
     setIsLoading(true);
     try {
-      const content = await importFromImdb(imdbId);
+      const content = await importFromTmdb(tmdbId);
       if (content) {
         setImportedContent(content);
         toast.success(`Successfully imported "${content.title}"`);
       } else {
-        toast.error('Failed to import content. Invalid IMDb ID or content not found.');
+        toast.error('Failed to import content. Invalid TMDB ID or content not found.');
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -41,7 +42,7 @@ const AdminImdbImport: React.FC<AdminImdbImportProps> = ({ onImport }) => {
   const handleAddContent = () => {
     if (importedContent) {
       onImport(importedContent);
-      setImdbId('');
+      setTmdbId('');
       setImportedContent(null);
       toast.success('Content added to library');
     }
@@ -49,31 +50,31 @@ const AdminImdbImport: React.FC<AdminImdbImportProps> = ({ onImport }) => {
 
   const handleCancel = () => {
     setImportedContent(null);
-    setImdbId('');
+    setTmdbId('');
   };
 
   return (
     <div className="bg-ott-card p-6 rounded-lg mb-8">
-      <h2 className="text-xl font-bold mb-4">Import from IMDb</h2>
+      <h2 className="text-xl font-bold mb-4">Import from TMDB</h2>
       
       {!importedContent ? (
         <div className="space-y-4">
           <p className="text-gray-400 text-sm">
-            Enter an IMDb ID to import content details directly from IMDb.
+            Enter a TMDB ID to import content details directly from The Movie Database.
           </p>
           
           <div className="flex gap-2">
             <Input
               type="text"
-              value={imdbId}
-              onChange={(e) => setImdbId(e.target.value)}
-              placeholder="e.g. tt0111161"
+              value={tmdbId}
+              onChange={(e) => setTmdbId(e.target.value)}
+              placeholder="e.g. 550 (Fight Club)"
               className="admin-input"
             />
             
             <Button 
               onClick={handleImport}
-              disabled={isLoading || !imdbId.trim()}
+              disabled={isLoading || !tmdbId.trim()}
               className="min-w-24"
             >
               {isLoading ? (
@@ -134,4 +135,4 @@ const AdminImdbImport: React.FC<AdminImdbImportProps> = ({ onImport }) => {
   );
 };
 
-export default AdminImdbImport;
+export default AdminTmdbImport;
