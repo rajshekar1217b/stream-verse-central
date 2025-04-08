@@ -27,7 +27,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       const content = await importFromTmdb(tmdbId);
       if (content) {
         setImportedContent(content);
-        toast.success(`Successfully imported "${content.title}"`);
+        toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'})`);
       } else {
         toast.error('Failed to import content. Invalid TMDB ID or content not found.');
       }
@@ -60,13 +60,15 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
   };
 
   return (
-    <div className="bg-ott-card p-6 rounded-lg mb-8">
+    <div className="bg-card p-6 rounded-lg mb-8 border border-border">
       <h2 className="text-xl font-bold mb-4">Import from TMDB</h2>
       
       {!importedContent ? (
         <div className="space-y-4">
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Enter a TMDB ID to import content details directly from The Movie Database API.
+            <br />
+            <span className="text-xs">Examples: Movie IDs (550 for Fight Club), TV Show IDs (1399 for Game of Thrones)</span>
           </p>
           
           <div className="flex gap-2">
@@ -74,7 +76,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               type="text"
               value={tmdbId}
               onChange={(e) => setTmdbId(e.target.value)}
-              placeholder="e.g. 550 (Fight Club), 1399 (Game of Thrones)"
+              placeholder="Enter TMDB ID (e.g., 550 or 1399)"
               className="admin-input"
             />
             
@@ -109,19 +111,19 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-bold text-lg">{importedContent.title}</h3>
                 {importedContent.type === 'movie' ? (
-                  <Film className="h-4 w-4 text-gray-400" />
+                  <Film className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <Tv className="h-4 w-4 text-gray-400" />
+                  <Tv className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
               
-              <div className="text-sm text-gray-400 mb-2">
+              <div className="text-sm text-muted-foreground mb-2">
                 {importedContent.type === 'movie' ? 'Movie' : 'TV Series'} • 
                 {importedContent.type === 'movie' && importedContent.duration && ` ${importedContent.duration} • `}
                 {formatDate(importedContent.releaseDate)}
               </div>
               
-              <p className="text-sm text-gray-300 line-clamp-3 mb-3">
+              <p className="text-sm text-foreground/80 line-clamp-3 mb-3">
                 {importedContent.overview}
               </p>
               
@@ -129,7 +131,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
                 {importedContent.genres.map((genre, i) => (
                   <span 
                     key={i} 
-                    className="px-2 py-0.5 bg-gray-800 rounded-full text-xs"
+                    className="px-2 py-0.5 bg-secondary rounded-full text-xs"
                   >
                     {genre}
                   </span>
@@ -137,7 +139,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               </div>
               
               {importedContent.type === 'tv' && importedContent.seasons && (
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   {importedContent.seasons.length} {importedContent.seasons.length === 1 ? 'Season' : 'Seasons'}
                 </div>
               )}
@@ -154,7 +156,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
             <Button 
               variant="outline" 
               onClick={handleCancel}
-              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+              className="border-border text-muted-foreground hover:bg-secondary"
             >
               <X className="h-4 w-4 mr-2" />
               Cancel

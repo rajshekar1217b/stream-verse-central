@@ -1,3 +1,4 @@
+
 import { Content, Category } from '@/types';
 import { mockContents, mockCategories } from '@/data/mockData';
 
@@ -42,16 +43,45 @@ export const searchContent = (query: string): Promise<Content[]> => {
 export const addContent = (content: Content): Promise<Content> => {
   // In a real app, this would make a POST request to your backend
   console.log('Adding content:', content);
-  return Promise.resolve({
+  
+  // Add the new content to our mock database
+  const newContent = {
     ...content,
     id: Date.now().toString(), // Generate a unique ID
-  });
+  };
+  
+  // Add the content to our mock data
+  mockContents.push(newContent);
+  
+  // Add to relevant category based on type
+  const categoryName = content.type === 'movie' ? 'Movies' : 'TV Shows';
+  const category = mockCategories.find(cat => cat.name === categoryName);
+  if (category) {
+    category.contents.push(newContent);
+  }
+  
+  return Promise.resolve(newContent);
 };
 
 // Update content (admin only)
 export const updateContent = (content: Content): Promise<Content> => {
   // In a real app, this would make a PUT request to your backend
   console.log('Updating content:', content);
+  
+  // Find and update the content in our mock database
+  const index = mockContents.findIndex(c => c.id === content.id);
+  if (index !== -1) {
+    mockContents[index] = content;
+    
+    // Update in categories
+    mockCategories.forEach(category => {
+      const catIndex = category.contents.findIndex(c => c.id === content.id);
+      if (catIndex !== -1) {
+        category.contents[catIndex] = content;
+      }
+    });
+  }
+  
   return Promise.resolve(content);
 };
 
@@ -59,6 +89,21 @@ export const updateContent = (content: Content): Promise<Content> => {
 export const deleteContent = (id: string): Promise<boolean> => {
   // In a real app, this would make a DELETE request to your backend
   console.log('Deleting content with ID:', id);
+  
+  // Remove from our mock database
+  const index = mockContents.findIndex(content => content.id === id);
+  if (index !== -1) {
+    mockContents.splice(index, 1);
+    
+    // Remove from categories
+    mockCategories.forEach(category => {
+      const catIndex = category.contents.findIndex(c => c.id === id);
+      if (catIndex !== -1) {
+        category.contents.splice(catIndex, 1);
+      }
+    });
+  }
+  
   return Promise.resolve(true);
 };
 
@@ -78,7 +123,12 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
     let contentDetails = null;
     
     // Try movie endpoint first
-    const movieResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`);
+    const movieResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
+      headers: {
+        'Authorization': `Bearer ${API_READ_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (movieResponse.ok) {
       movieData = await movieResponse.json();
@@ -86,7 +136,12 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
       contentDetails = movieData;
     } else {
       // If not a movie, try TV show endpoint
-      const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`);
+      const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
+        headers: {
+          'Authorization': `Bearer ${API_READ_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (tvResponse.ok) {
         tvData = await tvResponse.json();
@@ -116,13 +171,30 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
     // Extract genres
     const genres = contentDetails.genres.map((genre: any) => genre.name);
     
+    // Get cast information
+    const cast = contentDetails.credits && contentDetails.credits.cast ? 
+      contentDetails.credits.cast.slice(0, 10).map((person: any) => ({
+        id: `cast-${person.id}`,
+        name: person.name,
+        character: person.character,
+        profilePath: person.profile_path
+          ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
+          : 'https://via.placeholder.com/150?text=No+Image',
+      })) : [];
+    
     // Get seasons data for TV shows
     let seasons = undefined;
     if (contentType === 'tv' && contentDetails.seasons) {
       seasons = await Promise.all(contentDetails.seasons.map(async (season: any) => {
         // Fetch detailed season info including episodes
         const seasonResponse = await fetch(
-          `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${API_KEY}`
+          `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${API_KEY}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${API_READ_TOKEN}`,
+              'Content-Type': 'application/json'
+            }
+          }
         );
         
         if (!seasonResponse.ok) return null;
@@ -138,7 +210,7 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
             : 'https://via.placeholder.com/500x281?text=No+Image',
           episodeNumber: episode.episode_number,
           airDate: episode.air_date,
-          duration: '30m', // TMDB doesn't provide episode duration
+          duration: episode.runtime ? `${episode.runtime}m` : '30m', // Some TMDB episodes have runtime
           rating: episode.vote_average || 0,
         }));
         
@@ -177,8 +249,9 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
       rating: contentDetails.vote_average || 0,
       trailerUrl: trailerUrl,
       status: contentDetails.status,
+      cast: cast.length > 0 ? cast : undefined,
       seasons: seasons,
-      duration: contentType === 'movie' ? `${Math.floor(contentDetails.runtime / 60)}h ${contentDetails.runtime % 60}m` : undefined,
+      duration: contentType === 'movie' && contentDetails.runtime ? `${Math.floor(contentDetails.runtime / 60)}h ${contentDetails.runtime % 60}m` : undefined,
     };
     
     return content;
