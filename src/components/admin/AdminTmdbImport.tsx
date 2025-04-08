@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { importFromTmdb } from '@/services/api';
+import { importFromTmdb, addContent } from '@/services/api';
 import { Content } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ interface AdminTmdbImportProps {
 const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
   const [tmdbId, setTmdbId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [importedContent, setImportedContent] = useState<Content | null>(null);
 
   const handleImport = async () => {
@@ -39,12 +40,22 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
     }
   };
 
-  const handleAddContent = () => {
-    if (importedContent) {
-      onImport(importedContent);
+  const handleAddContent = async () => {
+    if (!importedContent) return;
+    
+    setIsAdding(true);
+    try {
+      // Save to database through API
+      const savedContent = await addContent(importedContent);
+      onImport(savedContent);
       setTmdbId('');
       setImportedContent(null);
-      toast.success('Content added to library');
+      toast.success('Content successfully added to library');
+    } catch (error) {
+      console.error('Error adding imported content:', error);
+      toast.error('Failed to save content to library');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -156,13 +167,21 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
             <Button 
               variant="outline" 
               onClick={handleCancel}
+              disabled={isAdding}
               className="border-border text-muted-foreground hover:bg-secondary"
             >
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleAddContent}>
-              <Check className="h-4 w-4 mr-2" />
+            <Button 
+              onClick={handleAddContent}
+              disabled={isAdding}
+            >
+              {isAdding ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
               Add to Library
             </Button>
           </div>

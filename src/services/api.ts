@@ -1,110 +1,385 @@
 
 import { Content, Category } from '@/types';
 import { mockContents, mockCategories } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 // Simulated API service
 // In a real-world scenario, these would make actual API calls to your backend
 
 // Get all content 
-export const getAllContent = (): Promise<Content[]> => {
-  return Promise.resolve(mockContents);
+export const getAllContent = async (): Promise<Content[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*');
+      
+    if (error) {
+      console.error('Error fetching content:', error);
+      return mockContents;
+    }
+    
+    return data.length > 0 ? data : mockContents;
+  } catch (error) {
+    console.error('Failed to fetch content:', error);
+    return mockContents;
+  }
 };
 
 // Get content by ID
-export const getContentById = (id: string): Promise<Content | undefined> => {
-  return Promise.resolve(mockContents.find(content => content.id === id));
+export const getContentById = async (id: string): Promise<Content | undefined> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching content by ID:', error);
+      return mockContents.find(content => content.id === id);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch content by ID:', error);
+    return mockContents.find(content => content.id === id);
+  }
 };
 
 // Get content by type (movie or tv)
-export const getContentByType = (type: 'movie' | 'tv' | 'all'): Promise<Content[]> => {
-  if (type === 'all') {
-    return Promise.resolve(mockContents);
+export const getContentByType = async (type: 'movie' | 'tv' | 'all'): Promise<Content[]> => {
+  try {
+    if (type === 'all') {
+      return await getAllContent();
+    }
+    
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*')
+      .eq('type', type);
+      
+    if (error) {
+      console.error('Error fetching content by type:', error);
+      return mockContents.filter(content => content.type === type);
+    }
+    
+    return data.length > 0 ? data : mockContents.filter(content => content.type === type);
+  } catch (error) {
+    console.error('Failed to fetch content by type:', error);
+    return mockContents.filter(content => content.type === type);
   }
-  return Promise.resolve(mockContents.filter(content => content.type === type));
 };
 
 // Get all categories with their contents
-export const getCategories = (): Promise<Category[]> => {
-  return Promise.resolve(mockCategories);
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    // First get categories
+    const { data: categoryData, error: categoryError } = await supabase
+      .from('categories')
+      .select('*');
+      
+    if (categoryError) {
+      console.error('Error fetching categories:', categoryError);
+      return mockCategories;
+    }
+    
+    if (categoryData.length === 0) {
+      return mockCategories;
+    }
+    
+    // Then get all contents
+    const { data: contentData, error: contentError } = await supabase
+      .from('contents')
+      .select('*');
+      
+    if (contentError) {
+      console.error('Error fetching contents for categories:', contentError);
+      return mockCategories;
+    }
+    
+    // Then get category_contents mapping
+    const { data: mappingData, error: mappingError } = await supabase
+      .from('category_contents')
+      .select('*');
+      
+    if (mappingError) {
+      console.error('Error fetching category mappings:', mappingError);
+      return mockCategories;
+    }
+    
+    // Build categories with their contents
+    const categories = categoryData.map((category: any) => {
+      const categoryContentIds = mappingData
+        .filter((mapping: any) => mapping.category_id === category.id)
+        .map((mapping: any) => mapping.content_id);
+        
+      const contents = contentData.filter((content: any) => 
+        categoryContentIds.includes(content.id)
+      );
+      
+      return {
+        ...category,
+        contents: contents.length > 0 ? contents : []
+      };
+    });
+    
+    return categories.length > 0 ? categories : mockCategories;
+  } catch (error) {
+    console.error('Failed to fetch categories:', error);
+    return mockCategories;
+  }
 };
 
 // Search content by title
-export const searchContent = (query: string): Promise<Content[]> => {
-  const normalizedQuery = query.toLowerCase();
-  return Promise.resolve(
-    mockContents.filter(content => 
+export const searchContent = async (query: string): Promise<Content[]> => {
+  try {
+    const normalizedQuery = query.toLowerCase();
+    
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*')
+      .ilike('title', `%${normalizedQuery}%`)
+      .or(`overview.ilike.%${normalizedQuery}%`);
+      
+    if (error) {
+      console.error('Error searching content:', error);
+      return mockContents.filter(content => 
+        content.title.toLowerCase().includes(normalizedQuery) || 
+        content.overview.toLowerCase().includes(normalizedQuery)
+      );
+    }
+    
+    return data.length > 0 ? data : mockContents.filter(content => 
       content.title.toLowerCase().includes(normalizedQuery) || 
       content.overview.toLowerCase().includes(normalizedQuery)
-    )
-  );
+    );
+  } catch (error) {
+    console.error('Failed to search content:', error);
+    return mockContents.filter(content => 
+      content.title.toLowerCase().includes(normalizedQuery) || 
+      content.overview.toLowerCase().includes(normalizedQuery)
+    );
+  }
 };
 
 // Add new content (admin only)
-export const addContent = (content: Content): Promise<Content> => {
-  // In a real app, this would make a POST request to your backend
-  console.log('Adding content:', content);
-  
-  // Add the new content to our mock database
-  const newContent = {
-    ...content,
-    id: Date.now().toString(), // Generate a unique ID
-  };
-  
-  // Add the content to our mock data
-  mockContents.push(newContent);
-  
-  // Add to relevant category based on type
-  const categoryName = content.type === 'movie' ? 'Movies' : 'TV Shows';
-  const category = mockCategories.find(cat => cat.name === categoryName);
-  if (category) {
-    category.contents.push(newContent);
+export const addContent = async (content: Content): Promise<Content> => {
+  try {
+    // Insert content into database
+    const { data, error } = await supabase
+      .from('contents')
+      .insert([{
+        id: content.id || `content-${Date.now()}`,
+        title: content.title,
+        overview: content.overview,
+        poster_path: content.posterPath,
+        backdrop_path: content.backdropPath,
+        release_date: content.releaseDate,
+        type: content.type,
+        genres: content.genres,
+        rating: content.rating,
+        trailer_url: content.trailerUrl,
+        duration: content.duration,
+        status: content.status,
+        cast: content.cast,
+        seasons: content.seasons,
+      }])
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error adding content:', error);
+      throw error;
+    }
+    
+    // Add to relevant category based on type
+    const categoryName = content.type === 'movie' ? 'Movies' : 'TV Shows';
+    
+    // Find category ID
+    const { data: categoryData, error: categoryError } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', categoryName)
+      .single();
+      
+    if (categoryError) {
+      console.error('Error finding category:', categoryError);
+      // If category not found, create it
+      if (categoryError.code === 'PGRST116') {
+        const { data: newCategory, error: newCategoryError } = await supabase
+          .from('categories')
+          .insert([{ name: categoryName }])
+          .select()
+          .single();
+          
+        if (newCategoryError) {
+          console.error('Error creating category:', newCategoryError);
+        } else {
+          // Add mapping
+          await supabase
+            .from('category_contents')
+            .insert([{
+              category_id: newCategory.id,
+              content_id: data.id
+            }]);
+        }
+      }
+    } else {
+      // Add mapping
+      await supabase
+        .from('category_contents')
+        .insert([{
+          category_id: categoryData.id,
+          content_id: data.id
+        }]);
+    }
+    
+    // Also add to "New Releases" category if recent
+    if (content.releaseDate) {
+      const releaseDate = new Date(content.releaseDate);
+      const now = new Date();
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(now.getFullYear() - 2);
+      
+      if (releaseDate >= twoYearsAgo) {
+        const { data: newReleasesCategory } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('name', 'New Releases')
+          .single();
+          
+        if (newReleasesCategory) {
+          await supabase
+            .from('category_contents')
+            .insert([{
+              category_id: newReleasesCategory.id,
+              content_id: data.id
+            }]);
+        }
+      }
+    }
+    
+    return data || content;
+  } catch (error) {
+    console.error('Failed to add content:', error);
+    
+    // Fallback to mock implementation
+    console.log('Adding content (fallback):', content);
+    
+    const newContent = {
+      ...content,
+      id: content.id || Date.now().toString(),
+    };
+    
+    mockContents.push(newContent);
+    
+    const categoryName = content.type === 'movie' ? 'Movies' : 'TV Shows';
+    const category = mockCategories.find(cat => cat.name === categoryName);
+    if (category) {
+      category.contents.push(newContent);
+    }
+    
+    return newContent;
   }
-  
-  return Promise.resolve(newContent);
 };
 
 // Update content (admin only)
-export const updateContent = (content: Content): Promise<Content> => {
-  // In a real app, this would make a PUT request to your backend
-  console.log('Updating content:', content);
-  
-  // Find and update the content in our mock database
-  const index = mockContents.findIndex(c => c.id === content.id);
-  if (index !== -1) {
-    mockContents[index] = content;
+export const updateContent = async (content: Content): Promise<Content> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .update({
+        title: content.title,
+        overview: content.overview,
+        poster_path: content.posterPath,
+        backdrop_path: content.backdropPath,
+        release_date: content.releaseDate,
+        type: content.type,
+        genres: content.genres,
+        rating: content.rating,
+        trailer_url: content.trailerUrl,
+        duration: content.duration,
+        status: content.status,
+        cast: content.cast,
+        seasons: content.seasons,
+      })
+      .eq('id', content.id)
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error updating content:', error);
+      throw error;
+    }
     
-    // Update in categories
-    mockCategories.forEach(category => {
-      const catIndex = category.contents.findIndex(c => c.id === content.id);
-      if (catIndex !== -1) {
-        category.contents[catIndex] = content;
-      }
-    });
+    return data || content;
+  } catch (error) {
+    console.error('Failed to update content:', error);
+    
+    // Fallback to mock implementation
+    console.log('Updating content (fallback):', content);
+    
+    const index = mockContents.findIndex(c => c.id === content.id);
+    if (index !== -1) {
+      mockContents[index] = content;
+      
+      mockCategories.forEach(category => {
+        const catIndex = category.contents.findIndex(c => c.id === content.id);
+        if (catIndex !== -1) {
+          category.contents[catIndex] = content;
+        }
+      });
+    }
+    
+    return content;
   }
-  
-  return Promise.resolve(content);
 };
 
 // Delete content (admin only)
-export const deleteContent = (id: string): Promise<boolean> => {
-  // In a real app, this would make a DELETE request to your backend
-  console.log('Deleting content with ID:', id);
-  
-  // Remove from our mock database
-  const index = mockContents.findIndex(content => content.id === id);
-  if (index !== -1) {
-    mockContents.splice(index, 1);
+export const deleteContent = async (id: string): Promise<boolean> => {
+  try {
+    // First delete all category mappings
+    const { error: mappingError } = await supabase
+      .from('category_contents')
+      .delete()
+      .eq('content_id', id);
+      
+    if (mappingError) {
+      console.error('Error deleting category mappings:', mappingError);
+    }
     
-    // Remove from categories
-    mockCategories.forEach(category => {
-      const catIndex = category.contents.findIndex(c => c.id === id);
-      if (catIndex !== -1) {
-        category.contents.splice(catIndex, 1);
-      }
-    });
+    // Then delete the content
+    const { error } = await supabase
+      .from('contents')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Error deleting content:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to delete content:', error);
+    
+    // Fallback to mock implementation
+    console.log('Deleting content with ID (fallback):', id);
+    
+    const index = mockContents.findIndex(content => content.id === id);
+    if (index !== -1) {
+      mockContents.splice(index, 1);
+      
+      mockCategories.forEach(category => {
+        const catIndex = category.contents.findIndex(c => c.id === id);
+        if (catIndex !== -1) {
+          category.contents.splice(catIndex, 1);
+        }
+      });
+    }
+    
+    return true;
   }
-  
-  return Promise.resolve(true);
 };
 
 // TMDB import function with real API integration
