@@ -9,13 +9,138 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      category_contents: {
+        Row: {
+          category_id: string
+          content_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          category_id: string
+          content_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          content_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_contents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_contents_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contents: {
+        Row: {
+          backdrop_path: string | null
+          cast_info: Json | null
+          created_at: string | null
+          duration: string | null
+          genres: string[]
+          id: string
+          overview: string
+          poster_path: string | null
+          rating: number | null
+          release_date: string | null
+          seasons: Json | null
+          status: string | null
+          title: string
+          trailer_url: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          backdrop_path?: string | null
+          cast_info?: Json | null
+          created_at?: string | null
+          duration?: string | null
+          genres?: string[]
+          id: string
+          overview: string
+          poster_path?: string | null
+          rating?: number | null
+          release_date?: string | null
+          seasons?: Json | null
+          status?: string | null
+          title: string
+          trailer_url?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          backdrop_path?: string | null
+          cast_info?: Json | null
+          created_at?: string | null
+          duration?: string | null
+          genres?: string[]
+          id?: string
+          overview?: string
+          poster_path?: string | null
+          rating?: number | null
+          release_date?: string | null
+          seasons?: Json | null
+          status?: string | null
+          title?: string
+          trailer_url?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_categories_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      create_category_contents_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      create_contents_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      seed_initial_categories: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

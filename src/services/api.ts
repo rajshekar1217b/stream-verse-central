@@ -18,7 +18,25 @@ export const getAllContent = async (): Promise<Content[]> => {
       return mockContents;
     }
     
-    return data.length > 0 ? data : mockContents;
+    // Map database fields to our Content type
+    const mappedContent = data.map(item => ({
+      id: item.id,
+      title: item.title,
+      overview: item.overview,
+      posterPath: item.poster_path,
+      backdropPath: item.backdrop_path,
+      releaseDate: item.release_date,
+      type: item.type as 'movie' | 'tv',
+      genres: item.genres,
+      rating: item.rating,
+      trailerUrl: item.trailer_url,
+      duration: item.duration,
+      status: item.status,
+      cast: item.cast_info ? item.cast_info : undefined,
+      seasons: item.seasons ? item.seasons : undefined,
+    }));
+    
+    return data.length > 0 ? mappedContent : mockContents;
   } catch (error) {
     console.error('Failed to fetch content:', error);
     return mockContents;
@@ -39,7 +57,27 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
       return mockContents.find(content => content.id === id);
     }
     
-    return data;
+    // Map database fields to our Content type
+    if (data) {
+      return {
+        id: data.id,
+        title: data.title,
+        overview: data.overview,
+        posterPath: data.poster_path,
+        backdropPath: data.backdrop_path,
+        releaseDate: data.release_date,
+        type: data.type as 'movie' | 'tv',
+        genres: data.genres,
+        rating: data.rating,
+        trailerUrl: data.trailer_url,
+        duration: data.duration,
+        status: data.status,
+        cast: data.cast_info ? data.cast_info : undefined,
+        seasons: data.seasons ? data.seasons : undefined,
+      };
+    }
+    
+    return mockContents.find(content => content.id === id);
   } catch (error) {
     console.error('Failed to fetch content by ID:', error);
     return mockContents.find(content => content.id === id);
@@ -63,7 +101,25 @@ export const getContentByType = async (type: 'movie' | 'tv' | 'all'): Promise<Co
       return mockContents.filter(content => content.type === type);
     }
     
-    return data.length > 0 ? data : mockContents.filter(content => content.type === type);
+    // Map database fields to our Content type
+    const mappedContent = data.map(item => ({
+      id: item.id,
+      title: item.title,
+      overview: item.overview,
+      posterPath: item.poster_path,
+      backdropPath: item.backdrop_path,
+      releaseDate: item.release_date,
+      type: item.type as 'movie' | 'tv',
+      genres: item.genres,
+      rating: item.rating,
+      trailerUrl: item.trailer_url,
+      duration: item.duration,
+      status: item.status,
+      cast: item.cast_info ? item.cast_info : undefined,
+      seasons: item.seasons ? item.seasons : undefined,
+    }));
+    
+    return data.length > 0 ? mappedContent : mockContents.filter(content => content.type === type);
   } catch (error) {
     console.error('Failed to fetch content by type:', error);
     return mockContents.filter(content => content.type === type);
@@ -115,10 +171,26 @@ export const getCategories = async (): Promise<Category[]> => {
         
       const contents = contentData.filter((content: any) => 
         categoryContentIds.includes(content.id)
-      );
+      ).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        overview: item.overview,
+        posterPath: item.poster_path,
+        backdropPath: item.backdrop_path,
+        releaseDate: item.release_date,
+        type: item.type as 'movie' | 'tv',
+        genres: item.genres,
+        rating: item.rating,
+        trailerUrl: item.trailer_url,
+        duration: item.duration,
+        status: item.status,
+        cast: item.cast_info ? item.cast_info : undefined,
+        seasons: item.seasons ? item.seasons : undefined,
+      }));
       
       return {
-        ...category,
+        id: category.id,
+        name: category.name,
         contents: contents.length > 0 ? contents : []
       };
     });
@@ -149,7 +221,25 @@ export const searchContent = async (query: string): Promise<Content[]> => {
       );
     }
     
-    return data.length > 0 ? data : mockContents.filter(content => 
+    // Map database fields to our Content type
+    const mappedContent = data.map(item => ({
+      id: item.id,
+      title: item.title,
+      overview: item.overview,
+      posterPath: item.poster_path,
+      backdropPath: item.backdrop_path,
+      releaseDate: item.release_date,
+      type: item.type as 'movie' | 'tv',
+      genres: item.genres,
+      rating: item.rating,
+      trailerUrl: item.trailer_url,
+      duration: item.duration,
+      status: item.status,
+      cast: item.cast_info ? item.cast_info : undefined,
+      seasons: item.seasons ? item.seasons : undefined,
+    }));
+    
+    return data.length > 0 ? mappedContent : mockContents.filter(content => 
       content.title.toLowerCase().includes(normalizedQuery) || 
       content.overview.toLowerCase().includes(normalizedQuery)
     );
@@ -181,7 +271,7 @@ export const addContent = async (content: Content): Promise<Content> => {
         trailer_url: content.trailerUrl,
         duration: content.duration,
         status: content.status,
-        cast: content.cast,
+        cast_info: content.cast,
         seasons: content.seasons,
       }])
       .select()
@@ -214,7 +304,7 @@ export const addContent = async (content: Content): Promise<Content> => {
           
         if (newCategoryError) {
           console.error('Error creating category:', newCategoryError);
-        } else {
+        } else if (newCategory && data) {
           // Add mapping
           await supabase
             .from('category_contents')
@@ -224,7 +314,7 @@ export const addContent = async (content: Content): Promise<Content> => {
             }]);
         }
       }
-    } else {
+    } else if (categoryData && data) {
       // Add mapping
       await supabase
         .from('category_contents')
@@ -248,7 +338,7 @@ export const addContent = async (content: Content): Promise<Content> => {
           .eq('name', 'New Releases')
           .single();
           
-        if (newReleasesCategory) {
+        if (newReleasesCategory && data) {
           await supabase
             .from('category_contents')
             .insert([{
@@ -259,7 +349,26 @@ export const addContent = async (content: Content): Promise<Content> => {
       }
     }
     
-    return data || content;
+    if (data) {
+      return {
+        id: data.id,
+        title: data.title,
+        overview: data.overview,
+        posterPath: data.poster_path,
+        backdropPath: data.backdrop_path,
+        releaseDate: data.release_date,
+        type: data.type as 'movie' | 'tv',
+        genres: data.genres,
+        rating: data.rating,
+        trailerUrl: data.trailer_url,
+        duration: data.duration,
+        status: data.status,
+        cast: data.cast_info ? data.cast_info : undefined,
+        seasons: data.seasons ? data.seasons : undefined,
+      };
+    }
+    
+    return content;
   } catch (error) {
     console.error('Failed to add content:', error);
     
@@ -300,7 +409,7 @@ export const updateContent = async (content: Content): Promise<Content> => {
         trailer_url: content.trailerUrl,
         duration: content.duration,
         status: content.status,
-        cast: content.cast,
+        cast_info: content.cast,
         seasons: content.seasons,
       })
       .eq('id', content.id)
@@ -312,7 +421,26 @@ export const updateContent = async (content: Content): Promise<Content> => {
       throw error;
     }
     
-    return data || content;
+    if (data) {
+      return {
+        id: data.id,
+        title: data.title,
+        overview: data.overview,
+        posterPath: data.poster_path,
+        backdropPath: data.backdrop_path,
+        releaseDate: data.release_date,
+        type: data.type as 'movie' | 'tv',
+        genres: data.genres,
+        rating: data.rating,
+        trailerUrl: data.trailer_url,
+        duration: data.duration,
+        status: data.status,
+        cast: data.cast_info ? data.cast_info : undefined,
+        seasons: data.seasons ? data.seasons : undefined,
+      };
+    }
+    
+    return content;
   } catch (error) {
     console.error('Failed to update content:', error);
     
