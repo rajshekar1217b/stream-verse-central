@@ -60,3 +60,10 @@ export interface WatchProvider {
 }
 
 export type ContentType = 'movie' | 'tv' | 'all';
+
+// Add the Category interface that was missing
+export interface Category {
+  id: string;
+  name: string;
+  contents: Content[];
+}
