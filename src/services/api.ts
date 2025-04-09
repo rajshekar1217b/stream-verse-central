@@ -676,12 +676,32 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
       
       if (watchProvidersResponse.ok) {
         const providersData = await watchProvidersResponse.json();
+        console.log("Watch providers data:", providersData);
         
-        // Use Indian providers (IN) if available, otherwise use US or default to random mock providers
-        const regionProviders = providersData.results?.IN || providersData.results?.US;
+        // Use US providers as default, then fall back to IN (India), then UK, then any available region
+        const regions = ['US', 'IN', 'GB'];
+        let regionProviders = null;
+        
+        // Try each preferred region in order
+        for (const region of regions) {
+          if (providersData.results && providersData.results[region]) {
+            regionProviders = providersData.results[region];
+            console.log(`Using ${region} watch providers`);
+            break;
+          }
+        }
+        
+        // If none of the preferred regions are available, use the first available region
+        if (!regionProviders && providersData.results) {
+          const availableRegions = Object.keys(providersData.results);
+          if (availableRegions.length > 0) {
+            regionProviders = providersData.results[availableRegions[0]];
+            console.log(`Using ${availableRegions[0]} watch providers as fallback`);
+          }
+        }
         
         if (regionProviders) {
-          // Combine flatrate, rent, and buy options
+          // Combine flatrate (subscription), rent, and buy options
           const allProviders = [
             ...(regionProviders.flatrate || []),
             ...(regionProviders.rent || []),
@@ -700,12 +720,38 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
               p.name.toLowerCase() === provider.provider_name.toLowerCase()
             );
             
+            // Generate a URL for web and app if possible
+            const providerName = provider.provider_name.toLowerCase();
+            let url = `https://www.google.com/search?q=watch+${encodeURIComponent(contentDetails.title || contentDetails.name)}+on+${encodeURIComponent(provider.provider_name)}`;
+            let redirectLink: string | undefined = undefined;
+            
+            // Add special handling for common streaming services
+            if (providerName.includes('netflix')) {
+              url = 'https://www.netflix.com/';
+              redirectLink = 'netflix://';
+            } else if (providerName.includes('disney')) {
+              url = 'https://www.disneyplus.com/';
+              redirectLink = 'disneyplus://';
+            } else if (providerName.includes('hulu')) {
+              url = 'https://www.hulu.com/';
+              redirectLink = 'hulu://';
+            } else if (providerName.includes('prime') || providerName.includes('amazon')) {
+              url = 'https://www.primevideo.com/';
+              redirectLink = 'amzn://apps/android?p=com.amazon.avod.thirdpartyclient';
+            } else if (providerName.includes('hbo') || providerName.includes('max')) {
+              url = 'https://www.max.com/';
+              redirectLink = 'max://';
+            } else if (providerName.includes('apple') || providerName.includes('itunes')) {
+              url = 'https://tv.apple.com/';
+              redirectLink = 'videos://';
+            }
+            
             return {
               id: knownProvider?.id || `tmdb-${provider.provider_id}`,
               name: provider.provider_name,
               logoPath: `https://image.tmdb.org/t/p/original${provider.logo_path}`,
-              url: knownProvider?.url || `https://www.google.com/search?q=watch+${encodeURIComponent(contentDetails.title || contentDetails.name)}+on+${encodeURIComponent(provider.provider_name)}`,
-              redirectLink: knownProvider?.redirectLink
+              url: knownProvider?.url || url,
+              redirectLink: knownProvider?.redirectLink || redirectLink
             };
           });
           
@@ -716,17 +762,11 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
       console.error('Error fetching watch providers:', error);
     }
     
-    // If no real providers were found, use random mock providers
-    if (availableWatchProviders.length === 0) {
-      availableWatchProviders = watchProviders
-        .slice()
-        .sort(() => Math.random() - 0.5)
-        .slice(0, Math.floor(Math.random() * 3) + 2);
-    }
+    console.log("Available watch providers:", availableWatchProviders);
     
     // Create content object based on TMDB data
     const content: Content = {
-      id: `tmdb-${contentDetails.id}`,
+      id: `tmdb-${contentDetails.id}-${contentType}`,
       title: contentType === 'movie' ? contentDetails.title : contentDetails.name,
       overview: contentDetails.overview || 'No overview available.',
       posterPath: contentDetails.poster_path 
@@ -743,7 +783,7 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
       status: contentDetails.status,
       cast: cast.length > 0 ? cast : undefined,
       seasons: seasons,
-      watchProviders: availableWatchProviders,
+      watchProviders: availableWatchProviders.length > 0 ? availableWatchProviders : undefined,
       duration: contentType === 'movie' && contentDetails.runtime ? 
         `${Math.floor(contentDetails.runtime / 60)}h ${contentDetails.runtime % 60}m` : 
         undefined,
