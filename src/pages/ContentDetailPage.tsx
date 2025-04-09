@@ -6,13 +6,17 @@ import { Content } from '@/types';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WatchProviders from '@/components/WatchProviders';
+import TVShowSeasons from '@/components/TVShowSeasons';
 import { PlayCircle, Calendar, Clock, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 const ContentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [content, setContent] = useState<Content | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [trailerOpen, setTrailerOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,11 +30,14 @@ const ContentDetailPage: React.FC = () => {
         const contentData = await getContentById(id);
         if (contentData) {
           setContent(contentData);
+          console.log("Content data loaded:", contentData);
         } else {
+          toast.error("Content not found");
           navigate('/not-found');
         }
       } catch (error) {
         console.error('Error fetching content:', error);
+        toast.error("Failed to load content");
         navigate('/not-found');
       } finally {
         setIsLoading(false);
@@ -42,10 +49,10 @@ const ContentDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-ott-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
-          <div className="h-8 w-36 bg-gray-700 rounded mb-4"></div>
-          <div className="h-4 w-48 bg-gray-700 rounded"></div>
+          <div className="h-8 w-36 bg-muted rounded mb-4"></div>
+          <div className="h-4 w-48 bg-muted rounded"></div>
         </div>
       </div>
     );
@@ -55,8 +62,27 @@ const ContentDetailPage: React.FC = () => {
     return null;
   }
 
+  // Format YouTube URL for embedding if it's a YouTube URL
+  const getEmbedUrl = (url: string | undefined) => {
+    if (!url) return '';
+    
+    // Handle YouTube URLs
+    if (url.includes('youtube.com/watch')) {
+      const videoId = new URL(url).searchParams.get('v');
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    }
+    
+    // Handle YouTube short URLs
+    if (url.includes('youtu.be')) {
+      const videoId = url.split('/').pop();
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    }
+    
+    return url; // Return as is if not YouTube or already an embed URL
+  };
+
   return (
-    <div className="min-h-screen bg-ott-background">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <main className="pt-16">
@@ -67,7 +93,7 @@ const ContentDetailPage: React.FC = () => {
             style={{ backgroundImage: `url(${content.backdropPath})` }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-ott-background via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
         </div>
 
@@ -83,15 +109,37 @@ const ContentDetailPage: React.FC = () => {
                 />
               </div>
 
-              {/* Watch Button */}
+              {/* Watch Trailer Button with Dialog */}
               {content.trailerUrl && (
-                <Button
-                  className="w-full mt-4 bg-ott-accent hover:bg-ott-accent/80 text-white"
-                  onClick={() => window.open(content.trailerUrl, '_blank')}
-                >
-                  <PlayCircle className="mr-2 h-5 w-5" />
-                  Watch Trailer
-                </Button>
+                <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      className="w-full mt-4 bg-primary hover:bg-primary/80"
+                    >
+                      <PlayCircle className="mr-2 h-5 w-5" />
+                      Watch Trailer
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>{content.title} - Official Trailer</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4 aspect-video w-full">
+                      <iframe
+                        src={getEmbedUrl(content.trailerUrl)}
+                        className="w-full h-full"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        title={`${content.title} Trailer`}
+                      ></iframe>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+              
+              {/* Watch Providers */}
+              {content.watchProviders && content.watchProviders.length > 0 && (
+                <WatchProviders providers={content.watchProviders} />
               )}
             </div>
 
@@ -100,7 +148,7 @@ const ContentDetailPage: React.FC = () => {
               <h1 className="text-3xl md:text-4xl font-bold mb-2">{content.title}</h1>
 
               {/* Meta Information */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
                 {content.releaseDate && (
                   <div className="flex items-center">
                     <Calendar className="mr-1 h-4 w-4" />
@@ -121,7 +169,7 @@ const ContentDetailPage: React.FC = () => {
                   {content.genres.map((genre, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 bg-gray-800 rounded-full text-xs"
+                      className="px-2 py-1 bg-secondary rounded-full text-xs"
                     >
                       {genre}
                     </span>
@@ -132,12 +180,12 @@ const ContentDetailPage: React.FC = () => {
               {/* Overview */}
               <div className="mb-8">
                 <h2 className="text-lg font-medium mb-2">Overview</h2>
-                <p className="text-gray-300">{content.overview}</p>
+                <p className="text-muted-foreground">{content.overview}</p>
               </div>
 
-              {/* Watch Providers */}
-              {content.watchProviders && (
-                <WatchProviders providers={content.watchProviders} />
+              {/* TV Show Seasons (only for TV shows) */}
+              {content.type === 'tv' && content.seasons && content.seasons.length > 0 && (
+                <TVShowSeasons seasons={content.seasons} />
               )}
 
               {/* Cast (if available) */}
@@ -156,7 +204,7 @@ const ContentDetailPage: React.FC = () => {
                         </div>
                         <p className="font-medium text-sm">{person.name}</p>
                         {person.character && (
-                          <p className="text-gray-400 text-xs">{person.character}</p>
+                          <p className="text-muted-foreground text-xs">{person.character}</p>
                         )}
                       </div>
                     ))}
