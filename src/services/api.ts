@@ -1,4 +1,3 @@
-
 import { Content, Category } from '@/types';
 import { mockContents, mockCategories } from '@/data/mockData';
 import { supabase, toJson } from '@/integrations/supabase/client';
@@ -590,52 +589,73 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
     // Get seasons data for TV shows
     let seasons = undefined;
     if (contentType === 'tv' && contentDetails.seasons) {
-      seasons = await Promise.all(contentDetails.seasons.map(async (season: any) => {
-        // Fetch detailed season info including episodes
-        const seasonResponse = await fetch(
-          `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${API_KEY}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${API_READ_TOKEN}`,
-              'Content-Type': 'application/json'
+      // Get full details for all seasons
+      seasons = await Promise.all(contentDetails.seasons
+        // Filter out season 0 which is usually specials
+        .filter((season: any) => season.season_number > 0)
+        .map(async (season: any) => {
+          try {
+            // Fetch detailed season info including episodes
+            const seasonResponse = await fetch(
+              `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${API_KEY}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${API_READ_TOKEN}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            
+            if (!seasonResponse.ok) {
+              console.error(`Failed to fetch season ${season.season_number} data`);
+              return null;
             }
+            
+            const seasonData = await seasonResponse.json();
+            
+            // Get episodes with complete details
+            const episodes = seasonData.episodes.map((episode: any) => ({
+              id: `${tmdbId}-s${season.season_number}-e${episode.episode_number}`,
+              title: episode.name,
+              overview: episode.overview || 'No description available.',
+              stillPath: episode.still_path 
+                ? `https://image.tmdb.org/t/p/w500${episode.still_path}` 
+                : 'https://via.placeholder.com/500x281?text=No+Image',
+              episodeNumber: episode.episode_number,
+              airDate: episode.air_date,
+              duration: episode.runtime ? `${episode.runtime}m` : '30m', // Some TMDB episodes have runtime
+              rating: episode.vote_average || 0,
+            }));
+            
+            return {
+              id: `${tmdbId}-s${season.season_number}`,
+              name: season.name,
+              overview: season.overview || seasonData.overview || 'No description available.',
+              posterPath: season.poster_path 
+                ? `https://image.tmdb.org/t/p/w500${season.poster_path}`
+                : 'https://via.placeholder.com/500x750?text=No+Image',
+              seasonNumber: season.season_number,
+              episodeCount: episodes.length,
+              airDate: season.air_date,
+              episodes: episodes
+            };
+          } catch (error) {
+            console.error(`Error fetching season ${season.season_number} data:`, error);
+            return null;
           }
-        );
-        
-        if (!seasonResponse.ok) return null;
-        
-        const seasonData = await seasonResponse.json();
-        
-        const episodes = seasonData.episodes.map((episode: any) => ({
-          id: `${tmdbId}-s${season.season_number}-e${episode.episode_number}`,
-          title: episode.name,
-          overview: episode.overview || 'No description available.',
-          stillPath: episode.still_path 
-            ? `https://image.tmdb.org/t/p/w500${episode.still_path}` 
-            : 'https://via.placeholder.com/500x281?text=No+Image',
-          episodeNumber: episode.episode_number,
-          airDate: episode.air_date,
-          duration: episode.runtime ? `${episode.runtime}m` : '30m', // Some TMDB episodes have runtime
-          rating: episode.vote_average || 0,
         }));
-        
-        return {
-          id: `${tmdbId}-s${season.season_number}`,
-          name: season.name,
-          overview: season.overview || seasonData.overview || 'No description available.',
-          posterPath: season.poster_path 
-            ? `https://image.tmdb.org/t/p/w500${season.poster_path}`
-            : 'https://via.placeholder.com/500x750?text=No+Image',
-          seasonNumber: season.season_number,
-          episodeCount: episodes.length,
-          airDate: season.air_date,
-          episodes: episodes
-        };
-      }));
       
       // Filter out null seasons (in case any season fetch failed)
-      seasons = seasons.filter(season => season !== null);
+      seasons = seasons.filter((season: Season | null) => season !== null);
     }
+    
+    // Determine available watch providers
+    // This is normally done with a separate API call, but for this implementation
+    // we'll randomly select from our available providers
+    const availableWatchProviders = watchProviders
+      .slice()
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.floor(Math.random() * 3) + 2);
     
     // Create content object based on TMDB data
     const content: Content = {
@@ -656,7 +676,10 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
       status: contentDetails.status,
       cast: cast.length > 0 ? cast : undefined,
       seasons: seasons,
-      duration: contentType === 'movie' && contentDetails.runtime ? `${Math.floor(contentDetails.runtime / 60)}h ${contentDetails.runtime % 60}m` : undefined,
+      watchProviders: availableWatchProviders,
+      duration: contentType === 'movie' && contentDetails.runtime ? 
+        `${Math.floor(contentDetails.runtime / 60)}h ${contentDetails.runtime % 60}m` : 
+        undefined,
     };
     
     return content;

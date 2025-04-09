@@ -1,3 +1,4 @@
+
 import { Content, Category, Season, Episode } from '@/types';
 
 // Mock Episodes
@@ -48,6 +49,48 @@ export const watchProviders = [
     logoPath: 'https://image.tmdb.org/t/p/original/68MNrwlkpF7WnmNPXLah69CR5cb.jpg',
     url: 'https://www.primevideo.com/',
     redirectLink: 'amzn://title/',
+  },
+  {
+    id: 'hotstar',
+    name: 'Disney+ Hotstar',
+    logoPath: 'https://image.tmdb.org/t/p/original/as2oTLpMy3nGgGTzX8TlWgdSw7f.jpg',
+    url: 'https://www.hotstar.com/',
+    redirectLink: 'hotstar://title/',
+  },
+  {
+    id: 'zee5',
+    name: 'ZEE5',
+    logoPath: 'https://image.tmdb.org/t/p/original/xDXzGK8JXfBzH9e2I5vuQ8Ov6yG.jpg',
+    url: 'https://www.zee5.com/',
+    redirectLink: 'zee5://title/',
+  },
+  {
+    id: 'sonyliv',
+    name: 'SonyLIV',
+    logoPath: 'https://image.tmdb.org/t/p/original/1U2VgZ9n2lL8rIwNdnkVcXGtYP.jpg',
+    url: 'https://www.sonyliv.com/',
+    redirectLink: 'sonyliv://title/',
+  },
+  {
+    id: 'altbalaji',
+    name: 'ALTBalaji',
+    logoPath: 'https://image.tmdb.org/t/p/original/yvMbK6T1ItCK8S9GrJpUBmD5vUa.jpg',
+    url: 'https://www.altbalaji.com/',
+    redirectLink: 'altbalaji://title/',
+  },
+  {
+    id: 'voot',
+    name: 'Voot',
+    logoPath: 'https://image.tmdb.org/t/p/original/ywSfsLZ3JgGzM4kJfRgrzVjcbsI.jpg',
+    url: 'https://www.voot.com/',
+    redirectLink: 'voot://title/',
+  },
+  {
+    id: 'aha',
+    name: 'Aha',
+    logoPath: 'https://image.tmdb.org/t/p/original/nCzwm4YLuXV7jM5gPOGqRGZ3Y46.jpg',
+    url: 'https://www.aha.video/',
+    redirectLink: 'aha://title/',
   },
   {
     id: 'hulu',

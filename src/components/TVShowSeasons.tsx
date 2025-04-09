@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { Season, Episode } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Calendar, Clock, Star } from 'lucide-react';
+import { Calendar, Clock, Star, Play, Film, List, Video } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 interface TVShowSeasonsProps {
   seasons: Season[];
@@ -12,6 +14,7 @@ interface TVShowSeasonsProps {
 
 const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
   const [selectedSeason, setSelectedSeason] = useState<string>(seasons[0]?.id || '');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   if (!seasons || seasons.length === 0) {
     return <div className="text-muted-foreground mt-4">No seasons available</div>;
@@ -19,10 +22,28 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
 
   return (
     <div className="mt-8">
-      <h2 className="text-lg font-medium mb-4">Seasons & Episodes</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium">Seasons & Episodes</h2>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`p-1 rounded ${viewMode === 'list' ? 'bg-muted' : ''}`}
+            aria-label="List view"
+          >
+            <List size={16} />
+          </button>
+          <button 
+            onClick={() => setViewMode('grid')}
+            className={`p-1 rounded ${viewMode === 'grid' ? 'bg-muted' : ''}`}
+            aria-label="Grid view"
+          >
+            <Video size={16} />
+          </button>
+        </div>
+      </div>
       
       <Tabs defaultValue={seasons[0]?.id} onValueChange={setSelectedSeason} className="w-full">
-        <TabsList className="w-full flex overflow-x-auto pb-1 mb-4">
+        <TabsList className="w-full flex overflow-x-auto pb-1 mb-4 max-w-full">
           {seasons.map((season) => (
             <TabsTrigger 
               key={season.id} 
@@ -37,37 +58,48 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
         {seasons.map((season) => (
           <TabsContent key={season.id} value={season.id} className="mt-2">
             <div className="bg-card rounded-lg p-4 shadow-md">
-              <div className="flex flex-col md:flex-row gap-4 mb-4">
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
                 {season.posterPath && (
                   <img 
                     src={season.posterPath} 
                     alt={season.name} 
-                    className="w-32 h-auto rounded"
+                    className="w-32 h-auto rounded shadow-md"
                   />
                 )}
-                <div>
+                <div className="flex-1">
                   <h3 className="text-xl font-medium">{season.name}</h3>
-                  {season.airDate && (
-                    <p className="text-sm text-muted-foreground flex items-center mt-2">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {new Date(season.airDate).toLocaleDateString()}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {season.episodeCount} Episodes
-                  </p>
+                  <div className="flex flex-wrap gap-3 mt-2 mb-2">
+                    {season.airDate && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(season.airDate).getFullYear()}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Film className="h-3 w-3" />
+                      {season.episodeCount} Episodes
+                    </Badge>
+                  </div>
                   {season.overview && (
-                    <p className="mt-2 text-sm">{season.overview}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">{season.overview}</p>
                   )}
                 </div>
               </div>
               
               {season.episodes && season.episodes.length > 0 && (
-                <Accordion type="single" collapsible className="w-full">
-                  {season.episodes.map((episode) => (
-                    <EpisodeItem key={episode.id} episode={episode} />
-                  ))}
-                </Accordion>
+                viewMode === 'list' ? (
+                  <Accordion type="single" collapsible className="w-full">
+                    {season.episodes.map((episode) => (
+                      <EpisodeListItem key={episode.id} episode={episode} />
+                    ))}
+                  </Accordion>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    {season.episodes.map((episode) => (
+                      <EpisodeGridItem key={episode.id} episode={episode} />
+                    ))}
+                  </div>
+                )
               )}
             </div>
           </TabsContent>
@@ -81,7 +113,7 @@ interface EpisodeItemProps {
   episode: Episode;
 }
 
-const EpisodeItem: React.FC<EpisodeItemProps> = ({ episode }) => {
+const EpisodeListItem: React.FC<EpisodeItemProps> = ({ episode }) => {
   return (
     <AccordionItem value={episode.id} className="border-b border-border">
       <AccordionTrigger className="hover:no-underline py-3">
@@ -111,11 +143,16 @@ const EpisodeItem: React.FC<EpisodeItemProps> = ({ episode }) => {
           <DialogTrigger asChild>
             <div className="flex mb-2 cursor-pointer">
               {episode.stillPath && (
-                <img 
-                  src={episode.stillPath} 
-                  alt={episode.title} 
-                  className="w-full h-32 object-cover rounded-md"
-                />
+                <div className="relative group">
+                  <img 
+                    src={episode.stillPath} 
+                    alt={episode.title} 
+                    className="w-full h-32 object-cover rounded-md"
+                  />
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Play className="h-10 w-10 text-white" />
+                  </div>
+                </div>
               )}
             </div>
           </DialogTrigger>
@@ -165,6 +202,84 @@ const EpisodeItem: React.FC<EpisodeItemProps> = ({ episode }) => {
         )}
       </AccordionContent>
     </AccordionItem>
+  );
+};
+
+const EpisodeGridItem: React.FC<EpisodeItemProps> = ({ episode }) => {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+          <div className="relative aspect-video">
+            <img 
+              src={episode.stillPath || 'https://via.placeholder.com/500x281?text=No+Image'} 
+              alt={episode.title} 
+              className="w-full h-full object-cover rounded-t-lg"
+            />
+            <div className="absolute top-2 left-2">
+              <Badge className="bg-primary/80 hover:bg-primary">E{episode.episodeNumber}</Badge>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
+              <Play className="h-12 w-12 text-white" />
+            </div>
+          </div>
+          <CardContent className="p-3">
+            <h4 className="font-medium line-clamp-1">{episode.title}</h4>
+            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+              {episode.duration && (
+                <span className="flex items-center">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {episode.duration}
+                </span>
+              )}
+              {episode.rating && (
+                <span className="flex items-center">
+                  <Star className="h-3 w-3 mr-1 text-yellow-500" />
+                  {episode.rating}
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl">
+            {episode.episodeNumber}. {episode.title}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="mt-4">
+          {episode.stillPath && (
+            <img 
+              src={episode.stillPath} 
+              alt={episode.title} 
+              className="w-full h-auto max-h-60 object-cover rounded-md mb-4"
+            />
+          )}
+          <div className="flex items-center text-sm text-muted-foreground mb-3">
+            {episode.airDate && (
+              <span className="flex items-center mr-4">
+                <Calendar className="h-4 w-4 mr-1" />
+                {new Date(episode.airDate).toLocaleDateString()}
+              </span>
+            )}
+            {episode.duration && (
+              <span className="flex items-center mr-4">
+                <Clock className="h-4 w-4 mr-1" />
+                {episode.duration}
+              </span>
+            )}
+            {episode.rating && (
+              <span className="flex items-center">
+                <Star className="h-4 w-4 mr-1 text-yellow-500" />
+                {episode.rating}
+              </span>
+            )}
+          </div>
+          <p>{episode.overview}</p>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
