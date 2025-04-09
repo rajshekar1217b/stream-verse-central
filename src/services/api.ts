@@ -1,6 +1,7 @@
+
 import { Content, Category } from '@/types';
 import { mockContents, mockCategories } from '@/data/mockData';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, toJson } from '@/integrations/supabase/client';
 
 // Simulated API service
 // In a real-world scenario, these would make actual API calls to your backend
@@ -31,8 +32,8 @@ export const getAllContent = async (): Promise<Content[]> => {
       trailerUrl: item.trailer_url || undefined,
       duration: item.duration || undefined,
       status: item.status || undefined,
-      cast: item.cast_info ? item.cast_info as any : undefined,
-      seasons: item.seasons ? item.seasons as any : undefined,
+      cast: item.cast_info ? (item.cast_info as any) : undefined,
+      seasons: item.seasons ? (item.seasons as any) : undefined,
     }));
     
     return data.length > 0 ? mappedContent : mockContents;
@@ -71,8 +72,8 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
         trailerUrl: data.trailer_url || undefined,
         duration: data.duration || undefined,
         status: data.status || undefined,
-        cast: data.cast_info ? data.cast_info as any : undefined,
-        seasons: data.seasons ? data.seasons as any : undefined,
+        cast: data.cast_info ? (data.cast_info as any) : undefined,
+        seasons: data.seasons ? (data.seasons as any) : undefined,
       };
     }
     
@@ -114,8 +115,8 @@ export const getContentByType = async (type: 'movie' | 'tv' | 'all'): Promise<Co
       trailerUrl: item.trailer_url || undefined,
       duration: item.duration || undefined,
       status: item.status || undefined,
-      cast: item.cast_info ? item.cast_info as any : undefined,
-      seasons: item.seasons ? item.seasons as any : undefined,
+      cast: item.cast_info ? (item.cast_info as any) : undefined,
+      seasons: item.seasons ? (item.seasons as any) : undefined,
     }));
     
     return data.length > 0 ? mappedContent : mockContents.filter(content => content.type === type);
@@ -183,8 +184,8 @@ export const getCategories = async (): Promise<Category[]> => {
         trailerUrl: item.trailer_url || undefined,
         duration: item.duration || undefined,
         status: item.status || undefined,
-        cast: item.cast_info ? item.cast_info as any : undefined,
-        seasons: item.seasons ? item.seasons as any : undefined,
+        cast: item.cast_info ? (item.cast_info as any) : undefined,
+        seasons: item.seasons ? (item.seasons as any) : undefined,
       }));
       
       return {
@@ -234,8 +235,8 @@ export const searchContent = async (query: string): Promise<Content[]> => {
       trailerUrl: item.trailer_url || undefined,
       duration: item.duration || undefined,
       status: item.status || undefined,
-      cast: item.cast_info ? item.cast_info as any : undefined,
-      seasons: item.seasons ? item.seasons as any : undefined,
+      cast: item.cast_info ? (item.cast_info as any) : undefined,
+      seasons: item.seasons ? (item.seasons as any) : undefined,
     }));
     
     return data.length > 0 ? mappedContent : mockContents.filter(content => 
@@ -255,24 +256,26 @@ export const searchContent = async (query: string): Promise<Content[]> => {
 export const addContent = async (content: Content): Promise<Content> => {
   try {
     // Insert content into database
+    const contentToInsert = {
+      id: content.id || `content-${Date.now()}`,
+      title: content.title,
+      overview: content.overview,
+      poster_path: content.posterPath,
+      backdrop_path: content.backdropPath,
+      release_date: content.releaseDate,
+      type: content.type,
+      genres: content.genres,
+      rating: content.rating,
+      trailer_url: content.trailerUrl,
+      duration: content.duration,
+      status: content.status,
+      cast_info: toJson(content.cast),
+      seasons: toJson(content.seasons),
+    };
+    
     const { data, error } = await supabase
       .from('contents')
-      .insert([{
-        id: content.id || `content-${Date.now()}`,
-        title: content.title,
-        overview: content.overview,
-        poster_path: content.posterPath,
-        backdrop_path: content.backdropPath,
-        release_date: content.releaseDate,
-        type: content.type,
-        genres: content.genres,
-        rating: content.rating,
-        trailer_url: content.trailerUrl,
-        duration: content.duration,
-        status: content.status,
-        cast_info: content.cast,
-        seasons: content.seasons,
-      }])
+      .insert(contentToInsert)
       .select()
       .single();
       
@@ -297,7 +300,7 @@ export const addContent = async (content: Content): Promise<Content> => {
       if (categoryError.code === 'PGRST116') {
         const { data: newCategory, error: newCategoryError } = await supabase
           .from('categories')
-          .insert([{ name: categoryName }])
+          .insert({ name: categoryName })
           .select()
           .single();
           
@@ -307,20 +310,20 @@ export const addContent = async (content: Content): Promise<Content> => {
           // Add mapping
           await supabase
             .from('category_contents')
-            .insert([{
+            .insert({
               category_id: newCategory.id,
               content_id: data.id
-            }]);
+            });
         }
       }
     } else if (categoryData && data) {
       // Add mapping
       await supabase
         .from('category_contents')
-        .insert([{
+        .insert({
           category_id: categoryData.id,
           content_id: data.id
-        }]);
+        });
     }
     
     // Also add to "New Releases" category if recent
@@ -340,10 +343,10 @@ export const addContent = async (content: Content): Promise<Content> => {
         if (newReleasesCategory && data) {
           await supabase
             .from('category_contents')
-            .insert([{
+            .insert({
               category_id: newReleasesCategory.id,
               content_id: data.id
-            }]);
+            });
         }
       }
     }
@@ -362,8 +365,8 @@ export const addContent = async (content: Content): Promise<Content> => {
         trailerUrl: data.trailer_url || undefined,
         duration: data.duration || undefined,
         status: data.status || undefined,
-        cast: data.cast_info ? data.cast_info as any : undefined,
-        seasons: data.seasons ? data.seasons as any : undefined,
+        cast: data.cast_info ? (data.cast_info as any) : undefined,
+        seasons: data.seasons ? (data.seasons as any) : undefined,
       };
     }
     
@@ -408,8 +411,8 @@ export const updateContent = async (content: Content): Promise<Content> => {
         trailer_url: content.trailerUrl,
         duration: content.duration,
         status: content.status,
-        cast_info: content.cast,
-        seasons: content.seasons,
+        cast_info: toJson(content.cast),
+        seasons: toJson(content.seasons),
       })
       .eq('id', content.id)
       .select()
@@ -434,8 +437,8 @@ export const updateContent = async (content: Content): Promise<Content> => {
         trailerUrl: data.trailer_url || undefined,
         duration: data.duration || undefined,
         status: data.status || undefined,
-        cast: data.cast_info ? data.cast_info as any : undefined,
-        seasons: data.seasons ? data.seasons as any : undefined,
+        cast: data.cast_info ? (data.cast_info as any) : undefined,
+        seasons: data.seasons ? (data.seasons as any) : undefined,
       };
     }
     
