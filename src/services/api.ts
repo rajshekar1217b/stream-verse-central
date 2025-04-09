@@ -1,5 +1,6 @@
-import { Content, Category } from '@/types';
-import { mockContents, mockCategories } from '@/data/mockData';
+
+import { Content, Category, Season, Episode, Person, WatchProvider } from '@/types';
+import { mockContents, mockCategories, watchProviders } from '@/data/mockData';
 import { supabase, toJson } from '@/integrations/supabase/client';
 
 // Simulated API service
