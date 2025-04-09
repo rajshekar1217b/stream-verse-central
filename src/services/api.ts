@@ -513,34 +513,46 @@ export const deleteContent = async (id: string): Promise<boolean> => {
 };
 
 // TMDB import function with real API integration
-export const importFromTmdb = async (tmdbId: string): Promise<Content | null> => {
-  console.log('Importing from TMDB ID:', tmdbId);
+export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'): Promise<Content | null> => {
+  console.log('Importing from TMDB ID:', tmdbId, 'Forced type:', forcedType);
   
   // TMDB API configuration
   const API_KEY = "bc7e2dc86a85f194da52360ed092f9cc";
   const API_READ_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiYzdlMmRjODZhODVmMTk0ZGE1MjM2MGVkMDkyZjljYyIsInN1YiI6IjYxYzUzZGQ3YjA0MjI4MDA2MTM1Y2MxOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.3VvMqEM8DbOVNZjxgKiHBVPXhpyhEPzXgIJ_NuArOvU";
   
   try {
-    // First, try to detect if it's a movie or TV show
-    let movieData = null;
-    let tvData = null;
-    let contentType: 'movie' | 'tv' = 'movie';
+    // Define the content type based on forced parameter or autodetect
+    let contentType: 'movie' | 'tv' = forcedType || 'movie';
     let contentDetails = null;
     
-    // Try movie endpoint first
-    const movieResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
-      headers: {
-        'Authorization': `Bearer ${API_READ_TOKEN}`,
-        'Content-Type': 'application/json'
+    if (forcedType === 'movie' || !forcedType) {
+      // Try movie endpoint first (or if explicitly requested)
+      const movieResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
+        headers: {
+          'Authorization': `Bearer ${API_READ_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (movieResponse.ok) {
+        contentDetails = await movieResponse.json();
+        contentType = 'movie';
+      } else if (!forcedType) {
+        // Only try TV if not forcing movie type
+        const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
+          headers: {
+            'Authorization': `Bearer ${API_READ_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (tvResponse.ok) {
+          contentDetails = await tvResponse.json();
+          contentType = 'tv';
+        }
       }
-    });
-    
-    if (movieResponse.ok) {
-      movieData = await movieResponse.json();
-      contentType = 'movie';
-      contentDetails = movieData;
-    } else {
-      // If not a movie, try TV show endpoint
+    } else if (forcedType === 'tv') {
+      // If TV type is explicitly requested
       const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
         headers: {
           'Authorization': `Bearer ${API_READ_TOKEN}`,
@@ -549,17 +561,14 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
       });
       
       if (tvResponse.ok) {
-        tvData = await tvResponse.json();
-        contentType = 'tv';
-        contentDetails = tvData;
-      } else {
-        // Neither movie nor TV show found
-        console.error('Content not found on TMDB');
-        return null;
+        contentDetails = await tvResponse.json();
       }
     }
     
-    if (!contentDetails) return null;
+    if (!contentDetails) {
+      console.error('Content not found on TMDB');
+      return null;
+    }
     
     // Extract trailer URL if available
     let trailerUrl = '';
@@ -650,13 +659,70 @@ export const importFromTmdb = async (tmdbId: string): Promise<Content | null> =>
       seasons = seasons.filter((season: Season | null) => season !== null);
     }
     
-    // Determine available watch providers
-    // This is normally done with a separate API call, but for this implementation
-    // we'll randomly select from our available providers
-    const availableWatchProviders = watchProviders
-      .slice()
-      .sort(() => Math.random() - 0.5)
-      .slice(0, Math.floor(Math.random() * 3) + 2);
+    // Include real watch providers from TMDB if available
+    let availableWatchProviders: WatchProvider[] = [];
+    
+    try {
+      // Fetch watch providers
+      const watchProvidersResponse = await fetch(
+        `https://api.themoviedb.org/3/${contentType}/${tmdbId}/watch/providers?api_key=${API_KEY}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${API_READ_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (watchProvidersResponse.ok) {
+        const providersData = await watchProvidersResponse.json();
+        
+        // Use Indian providers (IN) if available, otherwise use US or default to random mock providers
+        const regionProviders = providersData.results?.IN || providersData.results?.US;
+        
+        if (regionProviders) {
+          // Combine flatrate, rent, and buy options
+          const allProviders = [
+            ...(regionProviders.flatrate || []),
+            ...(regionProviders.rent || []),
+            ...(regionProviders.buy || [])
+          ];
+          
+          // Remove duplicates by provider ID
+          const uniqueProviders = allProviders.filter((provider: any, index: number, self: any[]) =>
+            index === self.findIndex((p: any) => p.provider_id === provider.provider_id)
+          );
+          
+          // Map to our provider format
+          const mappedProviders = uniqueProviders.map((provider: any) => {
+            // Try to find a matching provider in our database
+            const knownProvider = watchProviders.find(p => 
+              p.name.toLowerCase() === provider.provider_name.toLowerCase()
+            );
+            
+            return {
+              id: knownProvider?.id || `tmdb-${provider.provider_id}`,
+              name: provider.provider_name,
+              logoPath: `https://image.tmdb.org/t/p/original${provider.logo_path}`,
+              url: knownProvider?.url || `https://www.google.com/search?q=watch+${encodeURIComponent(contentDetails.title || contentDetails.name)}+on+${encodeURIComponent(provider.provider_name)}`,
+              redirectLink: knownProvider?.redirectLink
+            };
+          });
+          
+          availableWatchProviders = mappedProviders;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching watch providers:', error);
+    }
+    
+    // If no real providers were found, use random mock providers
+    if (availableWatchProviders.length === 0) {
+      availableWatchProviders = watchProviders
+        .slice()
+        .sort(() => Math.random() - 0.5)
+        .slice(0, Math.floor(Math.random() * 3) + 2);
+    }
     
     // Create content object based on TMDB data
     const content: Content = {

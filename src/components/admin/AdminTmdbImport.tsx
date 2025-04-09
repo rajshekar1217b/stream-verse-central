@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2, Check, X, Film, Tv } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AdminTmdbImportProps {
   onImport: (content: Content) => void;
@@ -16,6 +17,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [importedContent, setImportedContent] = useState<Content | null>(null);
+  const [contentType, setContentType] = useState<'movie' | 'tv'>('movie');
 
   const handleImport = async () => {
     if (!tmdbId.trim()) {
@@ -25,7 +27,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
 
     setIsLoading(true);
     try {
-      const content = await importFromTmdb(tmdbId);
+      const content = await importFromTmdb(tmdbId, contentType);
       if (content) {
         setImportedContent(content);
         toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'})`);
@@ -81,6 +83,19 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
             <br />
             <span className="text-xs">Examples: Movie IDs (550 for Fight Club), TV Show IDs (1399 for Game of Thrones)</span>
           </p>
+          
+          <Tabs value={contentType} onValueChange={(value) => setContentType(value as 'movie' | 'tv')} className="w-full mb-4">
+            <TabsList>
+              <TabsTrigger value="movie" className="flex items-center gap-2">
+                <Film className="h-4 w-4" />
+                Movie
+              </TabsTrigger>
+              <TabsTrigger value="tv" className="flex items-center gap-2">
+                <Tv className="h-4 w-4" />
+                TV Show
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           
           <div className="flex gap-2">
             <Input
@@ -158,6 +173,21 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               {importedContent.trailerUrl && (
                 <div className="text-xs text-blue-400 mt-1">
                   Trailer available
+                </div>
+              )}
+              
+              {importedContent.watchProviders && importedContent.watchProviders.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="text-xs text-muted-foreground">Available on:</span>
+                  {importedContent.watchProviders.map((provider, i) => (
+                    <img 
+                      key={i}
+                      src={provider.logoPath}
+                      alt={provider.name}
+                      title={provider.name}
+                      className="h-5 w-5 object-cover rounded-sm"
+                    />
+                  ))}
                 </div>
               )}
             </div>
