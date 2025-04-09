@@ -1,4 +1,3 @@
-
 import { Content, Category } from '@/types';
 import { mockContents, mockCategories } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,17 +22,17 @@ export const getAllContent = async (): Promise<Content[]> => {
       id: item.id,
       title: item.title,
       overview: item.overview,
-      posterPath: item.poster_path,
-      backdropPath: item.backdrop_path,
-      releaseDate: item.release_date,
+      posterPath: item.poster_path || '',
+      backdropPath: item.backdrop_path || '',
+      releaseDate: item.release_date || undefined,
       type: item.type as 'movie' | 'tv',
-      genres: item.genres,
-      rating: item.rating,
-      trailerUrl: item.trailer_url,
-      duration: item.duration,
-      status: item.status,
-      cast: item.cast_info ? item.cast_info : undefined,
-      seasons: item.seasons ? item.seasons : undefined,
+      genres: item.genres || [],
+      rating: item.rating || 0,
+      trailerUrl: item.trailer_url || undefined,
+      duration: item.duration || undefined,
+      status: item.status || undefined,
+      cast: item.cast_info ? item.cast_info as any : undefined,
+      seasons: item.seasons ? item.seasons as any : undefined,
     }));
     
     return data.length > 0 ? mappedContent : mockContents;
@@ -63,17 +62,17 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
         id: data.id,
         title: data.title,
         overview: data.overview,
-        posterPath: data.poster_path,
-        backdropPath: data.backdrop_path,
-        releaseDate: data.release_date,
+        posterPath: data.poster_path || '',
+        backdropPath: data.backdrop_path || '',
+        releaseDate: data.release_date || undefined,
         type: data.type as 'movie' | 'tv',
-        genres: data.genres,
-        rating: data.rating,
-        trailerUrl: data.trailer_url,
-        duration: data.duration,
-        status: data.status,
-        cast: data.cast_info ? data.cast_info : undefined,
-        seasons: data.seasons ? data.seasons : undefined,
+        genres: data.genres || [],
+        rating: data.rating || 0,
+        trailerUrl: data.trailer_url || undefined,
+        duration: data.duration || undefined,
+        status: data.status || undefined,
+        cast: data.cast_info ? data.cast_info as any : undefined,
+        seasons: data.seasons ? data.seasons as any : undefined,
       };
     }
     
@@ -106,17 +105,17 @@ export const getContentByType = async (type: 'movie' | 'tv' | 'all'): Promise<Co
       id: item.id,
       title: item.title,
       overview: item.overview,
-      posterPath: item.poster_path,
-      backdropPath: item.backdrop_path,
-      releaseDate: item.release_date,
+      posterPath: item.poster_path || '',
+      backdropPath: item.backdrop_path || '',
+      releaseDate: item.release_date || undefined,
       type: item.type as 'movie' | 'tv',
-      genres: item.genres,
-      rating: item.rating,
-      trailerUrl: item.trailer_url,
-      duration: item.duration,
-      status: item.status,
-      cast: item.cast_info ? item.cast_info : undefined,
-      seasons: item.seasons ? item.seasons : undefined,
+      genres: item.genres || [],
+      rating: item.rating || 0,
+      trailerUrl: item.trailer_url || undefined,
+      duration: item.duration || undefined,
+      status: item.status || undefined,
+      cast: item.cast_info ? item.cast_info as any : undefined,
+      seasons: item.seasons ? item.seasons as any : undefined,
     }));
     
     return data.length > 0 ? mappedContent : mockContents.filter(content => content.type === type);
@@ -175,17 +174,17 @@ export const getCategories = async (): Promise<Category[]> => {
         id: item.id,
         title: item.title,
         overview: item.overview,
-        posterPath: item.poster_path,
-        backdropPath: item.backdrop_path,
-        releaseDate: item.release_date,
+        posterPath: item.poster_path || '',
+        backdropPath: item.backdrop_path || '',
+        releaseDate: item.release_date || undefined,
         type: item.type as 'movie' | 'tv',
-        genres: item.genres,
-        rating: item.rating,
-        trailerUrl: item.trailer_url,
-        duration: item.duration,
-        status: item.status,
-        cast: item.cast_info ? item.cast_info : undefined,
-        seasons: item.seasons ? item.seasons : undefined,
+        genres: item.genres || [],
+        rating: item.rating || 0,
+        trailerUrl: item.trailer_url || undefined,
+        duration: item.duration || undefined,
+        status: item.status || undefined,
+        cast: item.cast_info ? item.cast_info as any : undefined,
+        seasons: item.seasons ? item.seasons as any : undefined,
       }));
       
       return {
@@ -226,17 +225,17 @@ export const searchContent = async (query: string): Promise<Content[]> => {
       id: item.id,
       title: item.title,
       overview: item.overview,
-      posterPath: item.poster_path,
-      backdropPath: item.backdrop_path,
-      releaseDate: item.release_date,
+      posterPath: item.poster_path || '',
+      backdropPath: item.backdrop_path || '',
+      releaseDate: item.release_date || undefined,
       type: item.type as 'movie' | 'tv',
-      genres: item.genres,
-      rating: item.rating,
-      trailerUrl: item.trailer_url,
-      duration: item.duration,
-      status: item.status,
-      cast: item.cast_info ? item.cast_info : undefined,
-      seasons: item.seasons ? item.seasons : undefined,
+      genres: item.genres || [],
+      rating: item.rating || 0,
+      trailerUrl: item.trailer_url || undefined,
+      duration: item.duration || undefined,
+      status: item.status || undefined,
+      cast: item.cast_info ? item.cast_info as any : undefined,
+      seasons: item.seasons ? item.seasons as any : undefined,
     }));
     
     return data.length > 0 ? mappedContent : mockContents.filter(content => 
@@ -246,8 +245,8 @@ export const searchContent = async (query: string): Promise<Content[]> => {
   } catch (error) {
     console.error('Failed to search content:', error);
     return mockContents.filter(content => 
-      content.title.toLowerCase().includes(normalizedQuery) || 
-      content.overview.toLowerCase().includes(normalizedQuery)
+      content.title.toLowerCase().includes(query.toLowerCase()) || 
+      content.overview.toLowerCase().includes(query.toLowerCase())
     );
   }
 };
@@ -354,17 +353,17 @@ export const addContent = async (content: Content): Promise<Content> => {
         id: data.id,
         title: data.title,
         overview: data.overview,
-        posterPath: data.poster_path,
-        backdropPath: data.backdrop_path,
-        releaseDate: data.release_date,
+        posterPath: data.poster_path || '',
+        backdropPath: data.backdrop_path || '',
+        releaseDate: data.release_date || undefined,
         type: data.type as 'movie' | 'tv',
-        genres: data.genres,
-        rating: data.rating,
-        trailerUrl: data.trailer_url,
-        duration: data.duration,
-        status: data.status,
-        cast: data.cast_info ? data.cast_info : undefined,
-        seasons: data.seasons ? data.seasons : undefined,
+        genres: data.genres || [],
+        rating: data.rating || 0,
+        trailerUrl: data.trailer_url || undefined,
+        duration: data.duration || undefined,
+        status: data.status || undefined,
+        cast: data.cast_info ? data.cast_info as any : undefined,
+        seasons: data.seasons ? data.seasons as any : undefined,
       };
     }
     
@@ -426,17 +425,17 @@ export const updateContent = async (content: Content): Promise<Content> => {
         id: data.id,
         title: data.title,
         overview: data.overview,
-        posterPath: data.poster_path,
-        backdropPath: data.backdrop_path,
-        releaseDate: data.release_date,
+        posterPath: data.poster_path || '',
+        backdropPath: data.backdrop_path || '',
+        releaseDate: data.release_date || undefined,
         type: data.type as 'movie' | 'tv',
-        genres: data.genres,
-        rating: data.rating,
-        trailerUrl: data.trailer_url,
-        duration: data.duration,
-        status: data.status,
-        cast: data.cast_info ? data.cast_info : undefined,
-        seasons: data.seasons ? data.seasons : undefined,
+        genres: data.genres || [],
+        rating: data.rating || 0,
+        trailerUrl: data.trailer_url || undefined,
+        duration: data.duration || undefined,
+        status: data.status || undefined,
+        cast: data.cast_info ? data.cast_info as any : undefined,
+        seasons: data.seasons ? data.seasons as any : undefined,
       };
     }
     
