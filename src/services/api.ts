@@ -54,11 +54,135 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
       
     if (error) {
       console.error('Error fetching content by ID:', error);
-      return mockContents.find(content => content.id === id);
+      const mockContent = mockContents.find(content => content.id === id);
+      
+      // If it's a TMDB ID, try to fetch fresh data from TMDB
+      if (id.startsWith('tmdb-')) {
+        const tmdbId = id.split('-')[1];
+        const contentType = id.endsWith('-movie') ? 'movie' : 'tv';
+        const freshContent = await importFromTmdb(tmdbId, contentType as 'movie' | 'tv');
+        if (freshContent) {
+          // Return the freshly imported content with watch providers
+          return freshContent;
+        }
+      }
+      
+      return mockContent;
     }
     
     // Map database fields to our Content type
     if (data) {
+      // Check if we have watch providers
+      let watchProviders = data.watch_providers ? data.watch_providers : undefined;
+      
+      // If we don't have watch providers and it's a TMDB ID, try to fetch them
+      if ((!watchProviders || watchProviders.length === 0) && id.startsWith('tmdb-')) {
+        try {
+          const tmdbId = id.split('-')[1];
+          const contentType = id.endsWith('-movie') ? 'movie' : 'tv';
+          
+          // Use the TMDB API key from environment, falling back to our hardcoded one
+          const API_KEY = "bc7e2dc86a85f194da52360ed092f9cc";
+          const API_READ_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiYzdlMmRjODZhODVmMTk0ZGE1MjM2MGVkMDkyZjljYyIsInN1YiI6IjYxYzUzZGQ3YjA0MjI4MDA2MTM1Y2MxOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.3VvMqEM8DbOVNZjxgKiHBVPXhpyhEPzXgIJ_NuArOvU";
+          
+          // Fetch watch providers
+          const watchProvidersResponse = await fetch(
+            `https://api.themoviedb.org/3/${contentType}/${tmdbId}/watch/providers?api_key=${API_KEY}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${API_READ_TOKEN}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          if (watchProvidersResponse.ok) {
+            const providersData = await watchProvidersResponse.json();
+            
+            // Use US providers as default, then fall back to other regions
+            const regions = ['US', 'IN', 'GB'];
+            let regionProviders = null;
+            
+            // Try each preferred region in order
+            for (const region of regions) {
+              if (providersData.results && providersData.results[region]) {
+                regionProviders = providersData.results[region];
+                console.log(`Using ${region} watch providers`);
+                break;
+              }
+            }
+            
+            // If none of the preferred regions are available, use the first available region
+            if (!regionProviders && providersData.results) {
+              const availableRegions = Object.keys(providersData.results);
+              if (availableRegions.length > 0) {
+                regionProviders = providersData.results[availableRegions[0]];
+                console.log(`Using ${availableRegions[0]} watch providers as fallback`);
+              }
+            }
+            
+            if (regionProviders) {
+              // Combine flatrate (subscription), rent, and buy options
+              const allProviders = [
+                ...(regionProviders.flatrate || []),
+                ...(regionProviders.rent || []),
+                ...(regionProviders.buy || [])
+              ];
+              
+              // Remove duplicates by provider ID
+              const uniqueProviders = allProviders.filter((provider: any, index: number, self: any[]) =>
+                index === self.findIndex((p: any) => p.provider_id === provider.provider_id)
+              );
+              
+              // Map to our provider format
+              watchProviders = uniqueProviders.map((provider: any) => {
+                // Generate a URL for web and app if possible
+                const providerName = provider.provider_name.toLowerCase();
+                let url = `https://www.google.com/search?q=watch+${encodeURIComponent(data.title)}+on+${encodeURIComponent(provider.provider_name)}`;
+                let redirectLink: string | undefined = undefined;
+                
+                // Add special handling for common streaming services
+                if (providerName.includes('netflix')) {
+                  url = 'https://www.netflix.com/';
+                  redirectLink = 'netflix://';
+                } else if (providerName.includes('disney')) {
+                  url = 'https://www.disneyplus.com/';
+                  redirectLink = 'disneyplus://';
+                } else if (providerName.includes('hulu')) {
+                  url = 'https://www.hulu.com/';
+                  redirectLink = 'hulu://';
+                } else if (providerName.includes('prime') || providerName.includes('amazon')) {
+                  url = 'https://www.primevideo.com/';
+                  redirectLink = 'amzn://apps/android?p=com.amazon.avod.thirdpartyclient';
+                } else if (providerName.includes('hbo') || providerName.includes('max')) {
+                  url = 'https://www.max.com/';
+                  redirectLink = 'max://';
+                } else if (providerName.includes('apple') || providerName.includes('itunes')) {
+                  url = 'https://tv.apple.com/';
+                  redirectLink = 'videos://';
+                }
+                
+                return {
+                  id: `tmdb-${provider.provider_id}`,
+                  name: provider.provider_name,
+                  logoPath: `https://image.tmdb.org/t/p/original${provider.logo_path}`,
+                  url: url,
+                  redirectLink: redirectLink
+                };
+              });
+              
+              // Update the content in database with the fetched watch providers
+              await supabase
+                .from('contents')
+                .update({ watch_providers: watchProviders })
+                .eq('id', id);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching watch providers from TMDB:', error);
+        }
+      }
+      
       return {
         id: data.id,
         title: data.title,
@@ -74,6 +198,8 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
         status: data.status || undefined,
         cast: data.cast_info ? (data.cast_info as any) : undefined,
         seasons: data.seasons ? (data.seasons as any) : undefined,
+        watchProviders: watchProviders ? watchProviders : undefined,
+        images: data.images ? (data.images as any) : undefined,
       };
     }
     

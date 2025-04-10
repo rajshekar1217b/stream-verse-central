@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getContentById } from '@/services/api';
@@ -31,7 +32,7 @@ const ContentDetailPage: React.FC = () => {
         if (contentData) {
           setContent(contentData);
           console.log("Content data loaded:", contentData);
-          if (contentData.watchProviders) {
+          if (contentData.watchProviders && contentData.watchProviders.length > 0) {
             console.log("Watch providers:", contentData.watchProviders);
           } else {
             console.log("No watch providers available");
@@ -136,18 +137,18 @@ const ContentDetailPage: React.FC = () => {
                 </Dialog>
               )}
               
-              {content.watchProviders && content.watchProviders.length > 0 ? (
-                <div className="mt-6">
+              <div className="mt-6">
+                {content.watchProviders && content.watchProviders.length > 0 ? (
                   <WatchProviders providers={content.watchProviders} />
-                </div>
-              ) : (
-                <div className="mt-6">
-                  <h3 className="text-lg font-medium mb-3">Where to Watch</h3>
-                  <p className="text-muted-foreground text-sm">
-                    No streaming options available at this time.
-                  </p>
-                </div>
-              )}
+                ) : (
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Where to Watch</h3>
+                    <p className="text-muted-foreground text-sm">
+                      No streaming options available at this time.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="md:w-3/4">
