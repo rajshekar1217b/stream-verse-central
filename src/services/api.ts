@@ -527,7 +527,7 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
     
     if (forcedType === 'movie' || !forcedType) {
       // Try movie endpoint first (or if explicitly requested)
-      const movieResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
+      const movieResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits,images`, {
         headers: {
           'Authorization': `Bearer ${API_READ_TOKEN}`,
           'Content-Type': 'application/json'
@@ -539,7 +539,7 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
         contentType = 'movie';
       } else if (!forcedType) {
         // Only try TV if not forcing movie type
-        const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
+        const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits,images`, {
           headers: {
             'Authorization': `Bearer ${API_READ_TOKEN}`,
             'Content-Type': 'application/json'
@@ -553,7 +553,7 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
       }
     } else if (forcedType === 'tv') {
       // If TV type is explicitly requested
-      const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits`, {
+      const tvResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&append_to_response=videos,credits,images`, {
         headers: {
           'Authorization': `Bearer ${API_READ_TOKEN}`,
           'Content-Type': 'application/json'
@@ -595,6 +595,32 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
           ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
           : 'https://via.placeholder.com/150?text=No+Image',
       })) : [];
+    
+    // Extract images (posters and backdrops)
+    let images = [];
+    if (contentDetails.images) {
+      // Get backdrops
+      if (contentDetails.images.backdrops && contentDetails.images.backdrops.length > 0) {
+        const backdrops = contentDetails.images.backdrops.slice(0, 10).map((image: any) => ({
+          path: `https://image.tmdb.org/t/p/original${image.file_path}`,
+          type: 'backdrop' as const
+        }));
+        images.push(...backdrops);
+      }
+      
+      // Get posters (excluding the main poster)
+      if (contentDetails.images.posters && contentDetails.images.posters.length > 0) {
+        const mainPosterPath = contentDetails.poster_path;
+        const posters = contentDetails.images.posters
+          .filter((image: any) => image.file_path !== mainPosterPath)
+          .slice(0, 6) // Limit to 6 additional posters
+          .map((image: any) => ({
+            path: `https://image.tmdb.org/t/p/w500${image.file_path}`,
+            type: 'poster' as const
+          }));
+        images.push(...posters);
+      }
+    }
     
     // Get seasons data for TV shows
     let seasons = undefined;
@@ -787,6 +813,7 @@ export const importFromTmdb = async (tmdbId: string, forcedType?: 'movie' | 'tv'
       duration: contentType === 'movie' && contentDetails.runtime ? 
         `${Math.floor(contentDetails.runtime / 60)}h ${contentDetails.runtime % 60}m` : 
         undefined,
+      images: images.length > 0 ? images : undefined,
     };
     
     return content;

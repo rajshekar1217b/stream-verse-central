@@ -7,9 +7,11 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WatchProviders from '@/components/WatchProviders';
 import TVShowSeasons from '@/components/TVShowSeasons';
+import ImageGallery from '@/components/ImageGallery';
 import { PlayCircle, Calendar, Clock, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 const ContentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,11 +31,14 @@ const ContentDetailPage: React.FC = () => {
         const contentData = await getContentById(id);
         if (contentData) {
           setContent(contentData);
+          console.log("Content data loaded:", contentData);
         } else {
+          toast.error("Content not found");
           navigate('/not-found');
         }
       } catch (error) {
         console.error('Error fetching content:', error);
+        toast.error("Failed to load content");
         navigate('/not-found');
       } finally {
         setIsLoading(false);
@@ -134,8 +139,10 @@ const ContentDetailPage: React.FC = () => {
               )}
               
               {/* Watch Providers */}
-              {content.watchProviders && (
-                <WatchProviders providers={content.watchProviders} />
+              {content.watchProviders && content.watchProviders.length > 0 && (
+                <div className="mt-6">
+                  <WatchProviders providers={content.watchProviders} />
+                </div>
               )}
             </div>
 
@@ -178,6 +185,11 @@ const ContentDetailPage: React.FC = () => {
                 <h2 className="text-lg font-medium mb-2">Overview</h2>
                 <p className="text-muted-foreground">{content.overview}</p>
               </div>
+
+              {/* Image Gallery */}
+              {content.images && content.images.length > 0 && (
+                <ImageGallery images={content.images} />
+              )}
 
               {/* TV Show Seasons (only for TV shows) */}
               {content.type === 'tv' && content.seasons && content.seasons.length > 0 && (

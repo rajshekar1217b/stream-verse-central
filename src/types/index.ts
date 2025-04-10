@@ -1,4 +1,3 @@
-
 export interface Content {
   id: string;
   title: string;
@@ -9,39 +8,44 @@ export interface Content {
   type: 'movie' | 'tv';
   genres: string[];
   rating: number;
-  watchProviders?: WatchProvider[];
   trailerUrl?: string;
   duration?: string;
   status?: string;
   cast?: Person[];
-  seasons?: Season[]; // Added for TV Shows
+  seasons?: Season[];
+  watchProviders?: WatchProvider[];
+  images?: {
+    path: string;
+    type: 'poster' | 'backdrop';
+  }[];
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  contents: Content[];
 }
 
 export interface Season {
   id: string;
   name: string;
-  overview?: string;
-  posterPath?: string;
-  airDate?: string;
+  overview: string;
+  posterPath: string;
   seasonNumber: number;
   episodeCount: number;
-  episodes?: Episode[];
+  airDate?: string;
+  episodes: Episode[];
 }
 
 export interface Episode {
   id: string;
   title: string;
   overview: string;
-  stillPath?: string;
-  airDate?: string;
+  stillPath: string;
   episodeNumber: number;
+  airDate?: string;
   duration?: string;
-  rating?: number;
-}
-
-export interface Genre {
-  id: string;
-  name: string;
+  rating: number;
 }
 
 export interface Person {
@@ -55,15 +59,6 @@ export interface WatchProvider {
   id: string;
   name: string;
   logoPath: string;
-  url: string;
-  redirectLink?: string; // Added for app redirect links
-}
-
-export type ContentType = 'movie' | 'tv' | 'all';
-
-// Add the Category interface that was missing
-export interface Category {
-  id: string;
-  name: string;
-  contents: Content[];
+  url?: string;
+  redirectLink?: string;
 }
