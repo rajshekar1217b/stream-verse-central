@@ -1,4 +1,3 @@
-
 import { Content, Category, Season, Episode, Person, WatchProvider } from '@/types';
 import { mockContents, mockCategories, watchProviders } from '@/data/mockData';
 import { supabase, toJson } from '@/integrations/supabase/client';
@@ -72,8 +71,8 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
     
     // Map database fields to our Content type
     if (data) {
-      // Check if we have watch providers
-      let watchProviders = data.watch_providers ? data.watch_providers : undefined;
+      // Check if we have watch providers - safely access as optional field
+      let watchProviders = (data as any).watch_providers ? (data as any).watch_providers : undefined;
       
       // If we don't have watch providers and it's a TMDB ID, try to fetch them
       if ((!watchProviders || watchProviders.length === 0) && id.startsWith('tmdb-')) {
@@ -174,7 +173,9 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
               // Update the content in database with the fetched watch providers
               await supabase
                 .from('contents')
-                .update({ watch_providers: watchProviders })
+                .update({ 
+                  watch_providers: watchProviders 
+                } as any)
                 .eq('id', id);
             }
           }
@@ -182,6 +183,9 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
           console.error('Error fetching watch providers from TMDB:', error);
         }
       }
+      
+      // Safely access images as optional field
+      const images = (data as any).images ? (data as any).images : undefined;
       
       return {
         id: data.id,
@@ -199,7 +203,7 @@ export const getContentById = async (id: string): Promise<Content | undefined> =
         cast: data.cast_info ? (data.cast_info as any) : undefined,
         seasons: data.seasons ? (data.seasons as any) : undefined,
         watchProviders: watchProviders ? watchProviders : undefined,
-        images: data.images ? (data.images as any) : undefined,
+        images: images ? (images as any) : undefined,
       };
     }
     
@@ -523,23 +527,35 @@ export const addContent = async (content: Content): Promise<Content> => {
 // Update content (admin only)
 export const updateContent = async (content: Content): Promise<Content> => {
   try {
+    // Type assertion to allow additional fields for database compatibility
+    const updateData: any = {
+      title: content.title,
+      overview: content.overview,
+      poster_path: content.posterPath,
+      backdrop_path: content.backdropPath,
+      release_date: content.releaseDate,
+      type: content.type,
+      genres: content.genres,
+      rating: content.rating,
+      trailer_url: content.trailerUrl,
+      duration: content.duration,
+      status: content.status,
+      cast_info: toJson(content.cast),
+      seasons: toJson(content.seasons)
+    };
+    
+    // Add optional fields if present
+    if (content.watchProviders) {
+      updateData.watch_providers = content.watchProviders;
+    }
+    
+    if (content.images) {
+      updateData.images = content.images;
+    }
+    
     const { data, error } = await supabase
       .from('contents')
-      .update({
-        title: content.title,
-        overview: content.overview,
-        poster_path: content.posterPath,
-        backdrop_path: content.backdropPath,
-        release_date: content.releaseDate,
-        type: content.type,
-        genres: content.genres,
-        rating: content.rating,
-        trailer_url: content.trailerUrl,
-        duration: content.duration,
-        status: content.status,
-        cast_info: toJson(content.cast),
-        seasons: toJson(content.seasons),
-      })
+      .update(updateData)
       .eq('id', content.id)
       .select()
       .single();
@@ -565,6 +581,8 @@ export const updateContent = async (content: Content): Promise<Content> => {
         status: data.status || undefined,
         cast: data.cast_info ? (data.cast_info as any) : undefined,
         seasons: data.seasons ? (data.seasons as any) : undefined,
+        watchProviders: (data as any).watch_providers ? (data as any).watch_providers : undefined,
+        images: (data as any).images ? (data as any).images : undefined,
       };
     }
     
