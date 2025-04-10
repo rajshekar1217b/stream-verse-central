@@ -67,7 +67,7 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
       <div className="hidden md:block">
         <Tabs defaultValue={seasons[0]?.id} onValueChange={setSelectedSeason} className="w-full">
           <div className="relative">
-            <ScrollArea className="w-full overflow-auto pb-1" orientation="horizontal">
+            <HorizontalScrollArea className="w-full pb-1">
               <TabsList className="w-max inline-flex flex-nowrap mb-4">
                 {seasons.map((season) => (
                   <TabsTrigger 
@@ -79,7 +79,7 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
                   </TabsTrigger>
                 ))}
               </TabsList>
-            </ScrollArea>
+            </HorizontalScrollArea>
           </div>
         </Tabs>
       </div>
