@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getContentById } from '@/services/api';
@@ -32,6 +31,11 @@ const ContentDetailPage: React.FC = () => {
         if (contentData) {
           setContent(contentData);
           console.log("Content data loaded:", contentData);
+          if (contentData.watchProviders) {
+            console.log("Watch providers:", contentData.watchProviders);
+          } else {
+            console.log("No watch providers available");
+          }
         } else {
           toast.error("Content not found");
           navigate('/not-found');
@@ -63,23 +67,20 @@ const ContentDetailPage: React.FC = () => {
     return null;
   }
 
-  // Format YouTube URL for embedding if it's a YouTube URL
   const getEmbedUrl = (url: string | undefined) => {
     if (!url) return '';
     
-    // Handle YouTube URLs
     if (url.includes('youtube.com/watch')) {
       const videoId = new URL(url).searchParams.get('v');
       return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
     }
     
-    // Handle YouTube short URLs
     if (url.includes('youtu.be')) {
       const videoId = url.split('/').pop();
       return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
     }
     
-    return url; // Return as is if not YouTube or already an embed URL
+    return url;
   };
 
   return (
@@ -87,7 +88,6 @@ const ContentDetailPage: React.FC = () => {
       <Header />
 
       <main className="pt-16">
-        {/* Backdrop Image */}
         <div className="relative h-[60vh] w-full mb-6">
           <div
             className="absolute inset-0 bg-cover bg-center"
@@ -100,7 +100,6 @@ const ContentDetailPage: React.FC = () => {
 
         <div className="container mx-auto px-4 pb-16">
           <div className="flex flex-col md:flex-row md:gap-8">
-            {/* Poster */}
             <div className="md:w-1/4 mb-6 md:mb-0">
               <div className="rounded-lg overflow-hidden shadow-lg">
                 <img
@@ -110,7 +109,6 @@ const ContentDetailPage: React.FC = () => {
                 />
               </div>
 
-              {/* Watch Trailer Button with Dialog */}
               {content.trailerUrl && (
                 <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
                   <DialogTrigger asChild>
@@ -138,19 +136,23 @@ const ContentDetailPage: React.FC = () => {
                 </Dialog>
               )}
               
-              {/* Watch Providers */}
-              {content.watchProviders && content.watchProviders.length > 0 && (
+              {content.watchProviders && content.watchProviders.length > 0 ? (
                 <div className="mt-6">
                   <WatchProviders providers={content.watchProviders} />
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <h3 className="text-lg font-medium mb-3">Where to Watch</h3>
+                  <p className="text-muted-foreground text-sm">
+                    No streaming options available at this time.
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Content Details */}
             <div className="md:w-3/4">
               <h1 className="text-3xl md:text-4xl font-bold mb-2">{content.title}</h1>
 
-              {/* Meta Information */}
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
                 {content.releaseDate && (
                   <div className="flex items-center">
@@ -180,23 +182,19 @@ const ContentDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Overview */}
               <div className="mb-8">
                 <h2 className="text-lg font-medium mb-2">Overview</h2>
                 <p className="text-muted-foreground">{content.overview}</p>
               </div>
 
-              {/* Image Gallery */}
               {content.images && content.images.length > 0 && (
                 <ImageGallery images={content.images} />
               )}
 
-              {/* TV Show Seasons (only for TV shows) */}
               {content.type === 'tv' && content.seasons && content.seasons.length > 0 && (
                 <TVShowSeasons seasons={content.seasons} />
               )}
 
-              {/* Cast (if available) */}
               {content.cast && content.cast.length > 0 && (
                 <div className="mt-8">
                   <h2 className="text-lg font-medium mb-4">Cast</h2>

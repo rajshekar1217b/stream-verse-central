@@ -4,6 +4,7 @@ import { ExternalLink, Smartphone } from 'lucide-react';
 import { WatchProvider } from '@/types';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface WatchProvidersProps {
   providers: WatchProvider[];
@@ -20,17 +21,25 @@ const WatchProviders: React.FC<WatchProvidersProps> = ({ providers }) => {
 
   // Handle opening the app if available, otherwise open the web URL
   const handleProviderClick = (provider: WatchProvider) => {
+    console.log("Opening provider:", provider);
+    
     if (provider.redirectLink) {
       // Try to open the app with the redirect link
+      toast.info(`Opening ${provider.name} app...`);
       window.location.href = provider.redirectLink;
       
       // Fallback to web URL after a short timeout (in case app doesn't open)
       setTimeout(() => {
-        window.open(provider.url, '_blank');
+        if (provider.url) {
+          window.open(provider.url, '_blank');
+        }
       }, 1500);
-    } else {
+    } else if (provider.url) {
       // Just open the web URL if no redirect link
+      toast.info(`Opening ${provider.name} website...`);
       window.open(provider.url, '_blank');
+    } else {
+      toast.error(`No link available for ${provider.name}`);
     }
   };
 
