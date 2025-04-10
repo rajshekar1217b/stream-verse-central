@@ -1,3 +1,4 @@
+
 export interface Content {
   id: string;
   title: string;
@@ -61,4 +62,10 @@ export interface WatchProvider {
   logoPath: string;
   url?: string;
   redirectLink?: string;
+}
+
+// Adding Genre interface for consistency, though we're using string[] for genres in Content
+export interface Genre {
+  id: string;
+  name: string;
 }

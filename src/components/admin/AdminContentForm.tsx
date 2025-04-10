@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Content, WatchProvider, Genre } from '@/types';
+import { Content, WatchProvider } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
