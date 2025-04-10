@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 
@@ -43,4 +44,19 @@ const ScrollBar = React.forwardRef<
 ))
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
 
-export { ScrollArea, ScrollBar }
+// Create a specific component for horizontal scrolling
+const HorizontalScrollArea = React.forwardRef<
+  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
+>(({ className, children, ...props }, ref) => (
+  <ScrollArea
+    ref={ref}
+    className={cn("w-full", className)}
+    {...props}
+  >
+    <div className="flex w-max">{children}</div>
+  </ScrollArea>
+))
+HorizontalScrollArea.displayName = "HorizontalScrollArea"
+
+export { ScrollArea, ScrollBar, HorizontalScrollArea }

@@ -7,6 +7,8 @@ import { Calendar, Clock, Star, Play, Film, List, Video } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea, HorizontalScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 interface TVShowSeasonsProps {
   seasons: Season[];
@@ -19,6 +21,9 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
   if (!seasons || seasons.length === 0) {
     return <div className="text-muted-foreground mt-4">No seasons available</div>;
   }
+
+  // Find the currently selected season object
+  const currentSeason = seasons.find(s => s.id === selectedSeason) || seasons[0];
 
   return (
     <div className="mt-8">
@@ -42,69 +47,89 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
         </div>
       </div>
       
-      <Tabs defaultValue={seasons[0]?.id} onValueChange={setSelectedSeason} className="w-full">
-        <TabsList className="w-full flex overflow-x-auto pb-1 mb-4 max-w-full">
-          {seasons.map((season) => (
-            <TabsTrigger 
-              key={season.id} 
-              value={season.id}
-              className="flex-shrink-0"
-            >
-              {season.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {seasons.map((season) => (
-          <TabsContent key={season.id} value={season.id} className="mt-2">
-            <div className="bg-card rounded-lg p-4 shadow-md">
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                {season.posterPath && (
-                  <img 
-                    src={season.posterPath} 
-                    alt={season.name} 
-                    className="w-32 h-auto rounded shadow-md"
-                  />
-                )}
-                <div className="flex-1">
-                  <h3 className="text-xl font-medium">{season.name}</h3>
-                  <div className="flex flex-wrap gap-3 mt-2 mb-2">
-                    {season.airDate && (
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(season.airDate).getFullYear()}
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Film className="h-3 w-3" />
-                      {season.episodeCount} Episodes
-                    </Badge>
-                  </div>
-                  {season.overview && (
-                    <p className="mt-2 text-sm text-muted-foreground">{season.overview}</p>
-                  )}
-                </div>
-              </div>
-              
-              {season.episodes && season.episodes.length > 0 && (
-                viewMode === 'list' ? (
-                  <Accordion type="single" collapsible className="w-full">
-                    {season.episodes.map((episode) => (
-                      <EpisodeListItem key={episode.id} episode={episode} />
-                    ))}
-                  </Accordion>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                    {season.episodes.map((episode) => (
-                      <EpisodeGridItem key={episode.id} episode={episode} />
-                    ))}
-                  </div>
-                )
+      {/* Mobile Season Selector (for small screens) */}
+      <div className="md:hidden mb-4">
+        <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Season" />
+          </SelectTrigger>
+          <SelectContent>
+            {seasons.map((season) => (
+              <SelectItem key={season.id} value={season.id}>
+                {season.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Desktop Tabs */}
+      <div className="hidden md:block">
+        <Tabs defaultValue={seasons[0]?.id} onValueChange={setSelectedSeason} className="w-full">
+          <div className="relative">
+            <ScrollArea className="w-full overflow-auto pb-1" orientation="horizontal">
+              <TabsList className="w-max inline-flex flex-nowrap mb-4">
+                {seasons.map((season) => (
+                  <TabsTrigger 
+                    key={season.id} 
+                    value={season.id}
+                    className="flex-shrink-0 whitespace-nowrap"
+                  >
+                    {season.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </ScrollArea>
+          </div>
+        </Tabs>
+      </div>
+      
+      {/* Season Content - shown for both mobile and desktop */}
+      <div className="bg-card rounded-lg p-4 shadow-md">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          {currentSeason.posterPath && (
+            <img 
+              src={currentSeason.posterPath} 
+              alt={currentSeason.name} 
+              className="w-32 h-auto rounded shadow-md"
+            />
+          )}
+          <div className="flex-1">
+            <h3 className="text-xl font-medium">{currentSeason.name}</h3>
+            <div className="flex flex-wrap gap-3 mt-2 mb-2">
+              {currentSeason.airDate && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(currentSeason.airDate).getFullYear()}
+                </Badge>
               )}
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Film className="h-3 w-3" />
+                {currentSeason.episodeCount} Episodes
+              </Badge>
             </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+            {currentSeason.overview && (
+              <p className="mt-2 text-sm text-muted-foreground">{currentSeason.overview}</p>
+            )}
+          </div>
+        </div>
+        
+        {currentSeason.episodes && currentSeason.episodes.length > 0 && (
+          viewMode === 'list' ? (
+            <Accordion type="single" collapsible className="w-full">
+              {currentSeason.episodes.map((episode) => (
+                <EpisodeListItem key={episode.id} episode={episode} />
+              ))}
+            </Accordion>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+              {currentSeason.episodes.map((episode) => (
+                <EpisodeGridItem key={episode.id} episode={episode} />
+              ))}
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 };
