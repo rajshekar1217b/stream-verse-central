@@ -23,14 +23,17 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'backdrops' | 'posters'>('all');
   
-  const backdrops = images.filter(img => img.type === 'backdrop');
-  const posters = images.filter(img => img.type === 'poster');
+  // Handle potential images formatting issues
+  const normalizedImages = Array.isArray(images) ? images : [];
   
-  let displayImages = images;
+  const backdrops = normalizedImages.filter(img => img.type === 'backdrop');
+  const posters = normalizedImages.filter(img => img.type === 'poster');
+  
+  let displayImages = normalizedImages;
   if (activeTab === 'backdrops') displayImages = backdrops;
   if (activeTab === 'posters') displayImages = posters;
   
-  if (images.length === 0) {
+  if (normalizedImages.length === 0) {
     return null;
   }
 
@@ -44,7 +47,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
         
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'backdrops' | 'posters')}>
           <TabsList className="grid grid-cols-3 h-8 w-auto">
-            <TabsTrigger value="all" className="text-xs">All ({images.length})</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs">All ({normalizedImages.length})</TabsTrigger>
             <TabsTrigger value="backdrops" className="text-xs">Backdrops ({backdrops.length})</TabsTrigger>
             <TabsTrigger value="posters" className="text-xs">Posters ({posters.length})</TabsTrigger>
           </TabsList>
@@ -63,6 +66,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                   src={image.path}
                   alt={`Gallery image ${index + 1}`}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://via.placeholder.com/1280x720?text=Image+Error';
+                  }}
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Maximize2 className="h-6 w-6 text-white" />
@@ -96,6 +103,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                 src={fullscreenImage}
                 alt="Fullscreen view"
                 className="max-h-[85vh] max-w-full object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'https://via.placeholder.com/1280x720?text=Image+Error';
+                }}
               />
             )}
           </div>

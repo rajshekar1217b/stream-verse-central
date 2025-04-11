@@ -32,9 +32,33 @@ const ContentDetailPage: React.FC = () => {
         const contentData = await getContentById(id);
         if (contentData) {
           console.log("Content data loaded:", contentData);
-          if (contentData.images) {
+          
+          // Create placeholder images if none exist or if they're undefined
+          if (!contentData.images || contentData.images._type === "undefined") {
+            console.log("No images found, creating placeholders");
+            // Create placeholder images array using poster and backdrop
+            const placeholderImages = [];
+            
+            if (contentData.posterPath) {
+              placeholderImages.push({
+                path: contentData.posterPath,
+                type: 'poster' as const
+              });
+            }
+            
+            if (contentData.backdropPath) {
+              placeholderImages.push({
+                path: contentData.backdropPath,
+                type: 'backdrop' as const
+              });
+            }
+            
+            contentData.images = placeholderImages;
+            console.log("Created placeholder images:", placeholderImages.length);
+          } else {
             console.log("Content images:", contentData.images.length);
           }
+          
           setContent(contentData);
           if (contentData.watchProviders && contentData.watchProviders.length > 0) {
             console.log("Watch providers:", contentData.watchProviders);
