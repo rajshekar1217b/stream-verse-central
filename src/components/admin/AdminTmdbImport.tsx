@@ -32,11 +32,14 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
 
     setIsLoading(true);
     try {
-      const content = await importFromTmdb(tmdbId, contentType, {
+      // Pass the options as an object in the second parameter
+      const content = await importFromTmdb(tmdbId, {
+        type: contentType,
         includePosters,
         includeBackdrops,
         includeExtras
       });
+      
       if (content) {
         setImportedContent(content);
         toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'})`);
