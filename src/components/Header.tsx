@@ -53,7 +53,7 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
-            <h1 className="text-xl font-bold text-ott-accent">StreamFlix</h1>
+            <h1 className="text-xl font-bold text-ott-accent">Where 2 Watch</h1>
           </Link>
 
           {/* Desktop Navigation */}

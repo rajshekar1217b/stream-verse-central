@@ -31,8 +31,11 @@ const ContentDetailPage: React.FC = () => {
       try {
         const contentData = await getContentById(id);
         if (contentData) {
-          setContent(contentData);
           console.log("Content data loaded:", contentData);
+          if (contentData.images) {
+            console.log("Content images:", contentData.images.length);
+          }
+          setContent(contentData);
           if (contentData.watchProviders && contentData.watchProviders.length > 0) {
             console.log("Watch providers:", contentData.watchProviders);
           } else {
@@ -82,9 +85,13 @@ const ContentDetailPage: React.FC = () => {
             <div className="md:w-1/4 mb-6 md:mb-0">
               <div className="rounded-lg overflow-hidden shadow-lg">
                 <img
-                  src={content.posterPath}
+                  src={content.posterPath || 'https://via.placeholder.com/500x750?text=No+Poster'}
                   alt={content.title}
                   className="w-full h-auto"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://via.placeholder.com/500x750?text=No+Poster';
+                  }}
                 />
               </div>
 
