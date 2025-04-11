@@ -33,8 +33,8 @@ const ContentDetailPage: React.FC = () => {
         if (contentData) {
           console.log("Content data loaded:", contentData);
           
-          // Create placeholder images if none exist or if they're undefined
-          if (!contentData.images || contentData.images._type === "undefined") {
+          // Create placeholder images if none exist or if they're improperly formatted
+          if (!contentData.images || !Array.isArray(contentData.images) || contentData.images.length === 0) {
             console.log("No images found, creating placeholders");
             // Create placeholder images array using poster and backdrop
             const placeholderImages = [];
