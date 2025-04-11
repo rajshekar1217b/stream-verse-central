@@ -42,7 +42,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium flex items-center">
           <ImageIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-          Gallery
+          Gallery ({normalizedImages.length} images)
         </h2>
         
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'backdrops' | 'posters')}>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { importFromTmdb, addContent } from '@/services/api';
 import { Content } from '@/types';
@@ -34,13 +35,34 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       const content = await importFromTmdb(tmdbId, contentType);
       
       if (content) {
-        if (content.images) {
+        // Ensure images is an array before filtering
+        if (content.images && Array.isArray(content.images)) {
           if (!includePosters) {
             content.images = content.images.filter(img => img.type !== 'poster');
           }
           if (!includeBackdrops) {
             content.images = content.images.filter(img => img.type !== 'backdrop');
           }
+        } else if (!content.images) {
+          // Create placeholder images array if none exist
+          const placeholderImages = [];
+          
+          if (content.posterPath) {
+            placeholderImages.push({
+              path: content.posterPath,
+              type: 'poster' as const
+            });
+          }
+          
+          if (content.backdropPath) {
+            placeholderImages.push({
+              path: content.backdropPath,
+              type: 'backdrop' as const
+            });
+          }
+          
+          content.images = placeholderImages;
+          console.log("Created placeholder images in import:", placeholderImages.length);
         }
         
         if (!includeExtras && content) {
@@ -66,6 +88,24 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
     
     setIsAdding(true);
     try {
+      // Ensure images array is valid before saving
+      if (!importedContent.images || !Array.isArray(importedContent.images)) {
+        const placeholderImages = [];
+        if (importedContent.posterPath) {
+          placeholderImages.push({
+            path: importedContent.posterPath,
+            type: 'poster' as const
+          });
+        }
+        if (importedContent.backdropPath) {
+          placeholderImages.push({
+            path: importedContent.backdropPath,
+            type: 'backdrop' as const
+          });
+        }
+        importedContent.images = placeholderImages;
+      }
+      
       const savedContent = await addContent(importedContent);
       onImport(savedContent);
       setTmdbId('');
@@ -241,7 +281,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
                 </div>
               )}
               
-              {importedContent.images && importedContent.images.length > 0 && (
+              {importedContent.images && Array.isArray(importedContent.images) && importedContent.images.length > 0 && (
                 <div className="text-xs text-green-400 mt-1">
                   {importedContent.images.length} image{importedContent.images.length > 1 ? 's' : ''} imported
                 </div>
