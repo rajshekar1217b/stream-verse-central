@@ -17,6 +17,7 @@ import TVShowsPage from "./pages/TVShowsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/search" element={<SearchPage />} />
               <Route path="/admin-login" element={<AdminLoginPage />} />
               <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </BrowserRouter>

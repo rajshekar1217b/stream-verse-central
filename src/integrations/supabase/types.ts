@@ -63,6 +63,67 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          comment_text: string
+          content_id: string
+          created_at: string
+          id: string
+          user_email: string
+          user_name: string
+        }
+        Insert: {
+          comment_text: string
+          content_id: string
+          created_at?: string
+          id?: string
+          user_email: string
+          user_name: string
+        }
+        Update: {
+          comment_text?: string
+          content_id?: string
+          created_at?: string
+          id?: string
+          user_email?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_views: {
+        Row: {
+          content_id: string
+          id: string
+          viewed_at: string
+        }
+        Insert: {
+          content_id: string
+          id?: string
+          viewed_at?: string
+        }
+        Update: {
+          content_id?: string
+          id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_views_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contents: {
         Row: {
           backdrop_path: string | null
@@ -117,6 +178,27 @@ export type Database = {
           trailer_url?: string | null
           type?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      email_subscribers: {
+        Row: {
+          email: string
+          id: string
+          is_active: boolean
+          subscribed_at: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          is_active?: boolean
+          subscribed_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          is_active?: boolean
+          subscribed_at?: string
         }
         Relationships: []
       }

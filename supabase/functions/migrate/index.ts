@@ -55,6 +55,79 @@ serve(async (req) => {
       console.error("Error seeding initial categories:", seedError);
       throw seedError;
     }
+    
+    // Create analytics functions
+    const createViewStatsFunc = `
+      CREATE OR REPLACE FUNCTION public.get_content_view_stats()
+      RETURNS TABLE (
+        content_id TEXT,
+        title TEXT,
+        view_count BIGINT
+      ) LANGUAGE sql SECURITY DEFINER AS $$
+        SELECT
+          cv.content_id,
+          c.title,
+          COUNT(*) as view_count
+        FROM
+          content_views cv
+          JOIN contents c ON cv.content_id = c.id
+        GROUP BY
+          cv.content_id, c.title
+        ORDER BY
+          view_count DESC;
+      $$;
+    `;
+    
+    const createTypeStatsFunc = `
+      CREATE OR REPLACE FUNCTION public.get_content_type_stats()
+      RETURNS TABLE (
+        type TEXT,
+        count BIGINT
+      ) LANGUAGE sql SECURITY DEFINER AS $$
+        SELECT
+          type,
+          COUNT(*) as count
+        FROM
+          contents
+        GROUP BY
+          type
+        ORDER BY
+          count DESC;
+      $$;
+    `;
+    
+    console.log("Creating analytics functions");
+    const { error: viewStatsError } = await supabase.rpc("get_content_view_stats");
+    if (viewStatsError && viewStatsError.code !== "42883") {
+      // If error is not "function does not exist", then it's an unexpected error
+      if (viewStatsError.code === "42883") {
+        // Create the function if it doesn't exist
+        const { error } = await supabase.sql(createViewStatsFunc);
+        if (error) {
+          console.error("Error creating view stats function:", error);
+          throw error;
+        }
+      } else {
+        console.error("Error checking view stats function:", viewStatsError);
+        throw viewStatsError;
+      }
+    }
+    
+    const { error: typeStatsError } = await supabase.rpc("get_content_type_stats");
+    if (typeStatsError && typeStatsError.code !== "42883") {
+      // If error is not "function does not exist", then it's an unexpected error
+      if (typeStatsError.code === "42883") {
+        // Create the function if it doesn't exist
+        const { error } = await supabase.sql(createTypeStatsFunc);
+        if (error) {
+          console.error("Error creating type stats function:", error);
+          throw error;
+        }
+      } else {
+        console.error("Error checking type stats function:", typeStatsError);
+        throw typeStatsError;
+      }
+    }
 
     return new Response(JSON.stringify({ success: true, message: "Database migration completed successfully" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

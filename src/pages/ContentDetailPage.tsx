@@ -12,6 +12,8 @@ import ContentDetails from '@/components/ContentDetails';
 import ContentBackdrop from '@/components/ContentBackdrop';
 import CastSection from '@/components/CastSection';
 import TrailerDialog from '@/components/TrailerDialog';
+import CommentsSection from '@/components/CommentsSection';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const ContentDetailPage: React.FC = () => {
@@ -20,6 +22,24 @@ const ContentDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Track page view when content loads
+  useEffect(() => {
+    const trackContentView = async (contentId: string) => {
+      try {
+        await supabase
+          .from('content_views')
+          .insert({ content_id: contentId });
+        console.log('View tracked for content:', contentId);
+      } catch (error) {
+        console.error('Error tracking content view:', error);
+      }
+    };
+
+    if (id && content) {
+      trackContentView(id);
+    }
+  }, [id, content]);
 
   useEffect(() => {
     if (!id) {
@@ -162,6 +182,9 @@ const ContentDetailPage: React.FC = () => {
               {content.cast && content.cast.length > 0 && (
                 <CastSection cast={content.cast} />
               )}
+
+              {/* Comments Section */}
+              <CommentsSection contentId={content.id} contentTitle={content.title} />
             </div>
           </div>
         </div>

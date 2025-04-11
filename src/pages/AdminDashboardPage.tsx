@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getAllContent, addContent, updateContent, deleteContent } from '@/services/api';
 import { Content } from '@/types';
-import { Plus, LogOut } from 'lucide-react';
+import { Plus, LogOut, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -144,6 +144,14 @@ const AdminDashboardPage: React.FC = () => {
             >
               <LogOut className="mr-2 h-4 w-4" />
               Logout
+            </Button>
+            
+            <Button
+              onClick={() => navigate('/admin/analytics')}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <BarChart className="mr-2 h-4 w-4" />
+              Analytics
             </Button>
             
             <Button
