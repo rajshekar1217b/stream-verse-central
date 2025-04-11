@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { importFromTmdb, addContent } from '@/services/api';
 import { Content } from '@/types';
@@ -32,15 +31,23 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
 
     setIsLoading(true);
     try {
-      // Pass the options as an object in the second parameter
-      const content = await importFromTmdb(tmdbId, {
-        type: contentType,
-        includePosters,
-        includeBackdrops,
-        includeExtras
-      });
+      const content = await importFromTmdb(tmdbId, contentType);
       
       if (content) {
+        if (content.images) {
+          if (!includePosters) {
+            content.images = content.images.filter(img => img.type !== 'poster');
+          }
+          if (!includeBackdrops) {
+            content.images = content.images.filter(img => img.type !== 'backdrop');
+          }
+        }
+        
+        if (!includeExtras && content) {
+          content.cast = undefined;
+          content.watchProviders = undefined;
+        }
+        
         setImportedContent(content);
         toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'})`);
       } else {
@@ -59,7 +66,6 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
     
     setIsAdding(true);
     try {
-      // Save to database through API
       const savedContent = await addContent(importedContent);
       onImport(savedContent);
       setTmdbId('');
