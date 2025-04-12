@@ -1,3 +1,4 @@
+
 export interface WatchProvider {
   id: string;
   name: string;
@@ -8,9 +9,24 @@ export interface WatchProvider {
 
 export interface Season {
   id: string;
+  name: string;
   seasonNumber: number;
   episodeCount: number;
   posterPath?: string;
+  airDate?: string;
+  overview?: string;
+  episodes?: Episode[];
+}
+
+export interface Episode {
+  id: string;
+  title: string;
+  overview: string;
+  stillPath?: string;
+  episodeNumber: number;
+  airDate?: string;
+  duration?: string;
+  rating?: number;
 }
 
 export interface CastMember {
@@ -19,6 +35,9 @@ export interface CastMember {
   character: string;
   profilePath?: string;
 }
+
+// Alias CastMember as Person for backward compatibility
+export type Person = CastMember;
 
 export interface Content {
   id: string;
@@ -32,6 +51,7 @@ export interface Content {
   rating?: number;
   trailerUrl?: string;
   duration?: string;
+  status?: string;
   watchProviders?: WatchProvider[];
   seasons?: Season[];
   cast?: CastMember[];
@@ -43,4 +63,10 @@ export interface Content {
     url: string;
     title: string;
   }[];
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  contents: Content[];
 }

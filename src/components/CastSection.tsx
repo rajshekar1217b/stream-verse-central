@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Person } from '@/types';
+import { CastMember } from '@/types';
 
 interface CastSectionProps {
-  cast: Person[];
+  cast: CastMember[];
 }
 
 const CastSection: React.FC<CastSectionProps> = ({ cast }) => {
