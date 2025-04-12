@@ -16,17 +16,24 @@ const TrailerDialog: React.FC<TrailerDialogProps> = ({ title, trailerUrl, open, 
 
   // Format YouTube URL for embedding if it's a YouTube URL
   const getEmbedUrl = (url: string) => {
-    if (url.includes('youtube.com/watch')) {
-      const videoId = new URL(url).searchParams.get('v');
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    try {
+      // Handle YouTube URLs
+      if (url.includes('youtube.com/watch')) {
+        const videoId = new URL(url).searchParams.get('v');
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+      }
+      
+      // Handle YouTube short URLs
+      if (url.includes('youtu.be')) {
+        const videoId = url.split('/').pop();
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+      }
+      
+      return url;
+    } catch (error) {
+      console.error('Error parsing video URL:', error);
+      return url; // Return original URL if parsing fails
     }
-    
-    if (url.includes('youtu.be')) {
-      const videoId = url.split('/').pop();
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-    }
-    
-    return url;
   };
 
   return (

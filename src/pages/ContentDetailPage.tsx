@@ -104,6 +104,14 @@ const ContentDetailPage: React.FC = () => {
           contentData.images = processedImages;
           console.log("Final processed images:", processedImages.length);
           
+          // Log embedded videos data for debugging
+          if (contentData.embedVideos && Array.isArray(contentData.embedVideos)) {
+            console.log("Found", contentData.embedVideos.length, "embedded videos:", contentData.embedVideos);
+          } else {
+            console.log("No embedded videos found or not in correct format");
+            contentData.embedVideos = [];
+          }
+          
           setContent(contentData);
         } else {
           toast.error("Content not found");
@@ -189,7 +197,7 @@ const ContentDetailPage: React.FC = () => {
               <ContentDetails content={content} />
 
               {/* Embedded Videos Section */}
-              {content?.embedVideos && content.embedVideos.length > 0 && (
+              {content?.embedVideos && Array.isArray(content.embedVideos) && content.embedVideos.length > 0 && (
                 <EmbeddedVideos videos={content.embedVideos} />
               )}
 

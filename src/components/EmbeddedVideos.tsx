@@ -17,27 +17,34 @@ const EmbeddedVideos: React.FC<EmbeddedVideosProps> = ({ videos }) => {
     return null;
   }
 
+  console.log("Rendering EmbeddedVideos with:", videos);
+
   // Format video URL for embedding if needed
   const getEmbedUrl = (url: string) => {
-    // Handle YouTube URLs
-    if (url.includes('youtube.com/watch')) {
-      const videoId = new URL(url).searchParams.get('v');
-      return `https://www.youtube.com/embed/${videoId}`;
+    try {
+      // Handle YouTube URLs
+      if (url.includes('youtube.com/watch')) {
+        const videoId = new URL(url).searchParams.get('v');
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+      
+      // Handle YouTube short URLs
+      if (url.includes('youtu.be')) {
+        const videoId = url.split('/').pop();
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+      
+      // Handle Vimeo URLs
+      if (url.includes('vimeo.com')) {
+        const videoId = url.split('/').pop();
+        return `https://player.vimeo.com/video/${videoId}`;
+      }
+      
+      return url; // Return as is if not YouTube, Vimeo or already an embed URL
+    } catch (error) {
+      console.error("Error parsing video URL:", error, url);
+      return url;
     }
-    
-    // Handle YouTube short URLs
-    if (url.includes('youtu.be')) {
-      const videoId = url.split('/').pop();
-      return `https://www.youtube.com/embed/${videoId}`;
-    }
-    
-    // Handle Vimeo URLs
-    if (url.includes('vimeo.com')) {
-      const videoId = url.split('/').pop();
-      return `https://player.vimeo.com/video/${videoId}`;
-    }
-    
-    return url; // Return as is if not YouTube, Vimeo or already an embed URL
   };
 
   return (
