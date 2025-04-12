@@ -47,7 +47,10 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               path: img.path,
               type: img.type === 'poster' ? 'poster' : 'backdrop'
             }));
-        } else if (content.images && typeof content.images === 'object' && content.images._type === 'undefined') {
+        } else if (content.images && typeof content.images === 'object' && 
+                   typeof content.images === 'object' && 
+                   'value' in content.images && 
+                   '_type' in content.images) {
           // Handle the case where images comes as {_type: 'undefined', value: 'undefined'}
           processedImages = [];
         }

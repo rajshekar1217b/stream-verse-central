@@ -74,7 +74,9 @@ const ContentDetailPage: React.FC = () => {
               
             console.log("Found", processedImages.length, "valid images in content data");
           } else if (contentData.images && typeof contentData.images === 'object' && 
-                    contentData.images._type === 'undefined') {
+                    typeof contentData.images === 'object' && 
+                    'value' in contentData.images && 
+                    '_type' in contentData.images) {
             // Handle the case where images comes as {_type: 'undefined', value: 'undefined'}
             console.log("Images property is malformed:", contentData.images);
             processedImages = [];
