@@ -28,10 +28,15 @@ const ContentDetailPage: React.FC = () => {
   useEffect(() => {
     const trackContentView = async (contentId: string) => {
       try {
-        await supabase
+        const { error } = await supabase
           .from('content_views')
           .insert({ content_id: contentId });
-        console.log('View tracked for content:', contentId);
+        
+        if (error) {
+          console.error('Error tracking content view:', error);
+        } else {
+          console.log('View tracked for content:', contentId);
+        }
       } catch (error) {
         console.error('Error tracking content view:', error);
       }
@@ -54,26 +59,31 @@ const ContentDetailPage: React.FC = () => {
         if (contentData) {
           console.log("Content data loaded:", contentData);
           
-          // Process the images array to ensure it's properly structured
+          // Initialize images array if it doesn't exist or is malformed
           let processedImages = [];
           
-          // Check if images exists and is an array
+          // Check if images exists and is a proper array 
           if (contentData.images && Array.isArray(contentData.images)) {
             // Filter out any invalid image objects
             processedImages = contentData.images
               .filter(img => img && typeof img === 'object' && img.path && img.type)
               .map(img => ({
                 path: img.path,
-                type: img.type === 'poster' ? 'poster' : 'backdrop' // Ensure type is always one of the two valid options
+                type: img.type === 'poster' ? 'poster' : 'backdrop'
               }));
               
             console.log("Found", processedImages.length, "valid images in content data");
+          } else if (contentData.images && typeof contentData.images === 'object' && 
+                    contentData.images._type === 'undefined') {
+            // Handle the case where images comes as {_type: 'undefined', value: 'undefined'}
+            console.log("Images property is malformed:", contentData.images);
+            processedImages = [];
           } else {
             console.log("No images array found or improperly formatted, creating from poster and backdrop");
             processedImages = [];
           }
           
-          // Always make sure poster and backdrop are included in images
+          // Always make sure poster and backdrop are included in images if they exist
           if (contentData.posterPath && !processedImages.some(img => img.path === contentData.posterPath)) {
             processedImages.push({
               path: contentData.posterPath,
@@ -183,9 +193,7 @@ const ContentDetailPage: React.FC = () => {
 
               {/* Image Gallery - with debug info */}
               {content?.images && content.images.length > 0 && (
-                <>
-                  <ImageGallery images={content.images} />
-                </>
+                <ImageGallery images={content.images} />
               )}
 
               {/* TV Show Seasons */}

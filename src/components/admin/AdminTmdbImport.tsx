@@ -47,6 +47,9 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               path: img.path,
               type: img.type === 'poster' ? 'poster' : 'backdrop'
             }));
+        } else if (content.images && typeof content.images === 'object' && content.images._type === 'undefined') {
+          // Handle the case where images comes as {_type: 'undefined', value: 'undefined'}
+          processedImages = [];
         }
         
         // Always include poster and backdrop in images if they exist
@@ -79,8 +82,8 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         
         // Remove extra data if option is turned off
         if (!includeExtras && content) {
-          content.cast = undefined;
-          content.watchProviders = undefined;
+          content.cast = [];
+          content.watchProviders = [];
         }
         
         setImportedContent(content);
@@ -102,32 +105,34 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
     setIsAdding(true);
     try {
       // Ensure images array is valid before saving
-      if (!importedContent.images || !Array.isArray(importedContent.images) || importedContent.images.length === 0) {
-        const placeholderImages = [];
-        if (importedContent.posterPath) {
-          placeholderImages.push({
-            path: importedContent.posterPath,
+      let contentToSave = { ...importedContent };
+      
+      if (!contentToSave.images || !Array.isArray(contentToSave.images)) {
+        contentToSave.images = [];
+        
+        if (contentToSave.posterPath) {
+          contentToSave.images.push({
+            path: contentToSave.posterPath,
             type: 'poster'
           });
         }
-        if (importedContent.backdropPath) {
-          placeholderImages.push({
-            path: importedContent.backdropPath,
+        if (contentToSave.backdropPath) {
+          contentToSave.images.push({
+            path: contentToSave.backdropPath,
             type: 'backdrop'
           });
         }
-        importedContent.images = placeholderImages;
       }
       
       // Double-check each image in the array has the correct structure
-      importedContent.images = importedContent.images.map(img => ({
+      contentToSave.images = contentToSave.images.map(img => ({
         path: img.path,
         type: img.type === 'poster' ? 'poster' : 'backdrop'
       }));
       
-      console.log("Saving content with images:", importedContent.images.length, importedContent.images);
+      console.log("Saving content with images:", contentToSave.images.length, contentToSave.images);
       
-      const savedContent = await addContent(importedContent);
+      const savedContent = await addContent(contentToSave);
       onImport(savedContent);
       setTmdbId('');
       setImportedContent(null);
