@@ -26,11 +26,21 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
   // Handle potential images formatting issues
   const normalizedImages = React.useMemo(() => {
     if (!Array.isArray(images) || images.length === 0) {
+      console.log("No images array or empty array provided to ImageGallery");
       return [];
     }
     
     // Make sure all images have proper paths (not undefined or empty)
-    return images.filter(img => img && img.path && img.type);
+    const filteredImages = images.filter(img => {
+      const isValid = img && typeof img === 'object' && img.path && typeof img.path === 'string' && img.type;
+      if (!isValid) {
+        console.log("Filtering out invalid image:", img);
+      }
+      return isValid;
+    });
+    
+    console.log(`ImageGallery: Normalized ${filteredImages.length} valid images from ${images.length} provided images`);
+    return filteredImages;
   }, [images]);
   
   const backdrops = normalizedImages.filter(img => img.type === 'backdrop');
@@ -41,6 +51,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
   if (activeTab === 'posters') displayImages = posters;
   
   if (normalizedImages.length === 0) {
+    console.log("No valid images to display in gallery");
     return null;
   }
 
@@ -99,8 +110,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                 <img
                   src={image.path}
                   alt={`Gallery image ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover ${image.type === 'poster' ? 'object-top' : 'object-center'}`}
                   onError={(e) => {
+                    console.error("Image failed to load:", image.path);
                     const target = e.target as HTMLImageElement;
                     target.src = 'https://via.placeholder.com/1280x720?text=Image+Error';
                   }}
@@ -163,6 +175,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                 alt="Fullscreen view"
                 className="max-h-[85vh] max-w-full object-contain"
                 onError={(e) => {
+                  console.error("Fullscreen image failed to load:", fullscreenImage);
                   const target = e.target as HTMLImageElement;
                   target.src = 'https://via.placeholder.com/1280x720?text=Image+Error';
                 }}

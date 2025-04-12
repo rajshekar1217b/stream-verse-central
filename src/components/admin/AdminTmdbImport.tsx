@@ -35,28 +35,32 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       const content = await importFromTmdb(tmdbId, contentType);
       
       if (content) {
-        // Process images from TMDB import
+        // Process images from TMDB import - make sure they are properly structured
         let processedImages = [];
         
         // Ensure images is an array before filtering
         if (content.images && Array.isArray(content.images)) {
-          processedImages = content.images.filter(img => img && img.path && img.type);
-        } else {
-          processedImages = [];
+          // Make a deep copy to avoid reference issues
+          processedImages = content.images
+            .filter(img => img && typeof img === 'object' && img.path && img.type)
+            .map(img => ({ 
+              path: img.path,
+              type: img.type === 'poster' ? 'poster' : 'backdrop'
+            }));
         }
         
         // Always include poster and backdrop in images if they exist
         if (content.posterPath && !processedImages.some(img => img.path === content.posterPath)) {
           processedImages.push({
             path: content.posterPath,
-            type: 'poster' as const
+            type: 'poster'
           });
         }
         
         if (content.backdropPath && !processedImages.some(img => img.path === content.backdropPath)) {
           processedImages.push({
             path: content.backdropPath,
-            type: 'backdrop' as const
+            type: 'backdrop'
           });
         }
         
@@ -68,10 +72,10 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
           processedImages = processedImages.filter(img => img.type !== 'backdrop');
         }
         
-        // Update the content with processed images
+        // Ensure all images have correct structure 
         content.images = processedImages;
         
-        console.log("Processed images for TMDB import:", processedImages.length);
+        console.log("Processed images for TMDB import:", processedImages.length, processedImages);
         
         // Remove extra data if option is turned off
         if (!includeExtras && content) {
@@ -80,7 +84,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         }
         
         setImportedContent(content);
-        toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'})`);
+        toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'}) with ${processedImages.length} images`);
       } else {
         toast.error('Failed to import content. Invalid TMDB ID or content not found.');
       }
@@ -98,22 +102,30 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
     setIsAdding(true);
     try {
       // Ensure images array is valid before saving
-      if (!importedContent.images || !Array.isArray(importedContent.images)) {
+      if (!importedContent.images || !Array.isArray(importedContent.images) || importedContent.images.length === 0) {
         const placeholderImages = [];
         if (importedContent.posterPath) {
           placeholderImages.push({
             path: importedContent.posterPath,
-            type: 'poster' as const
+            type: 'poster'
           });
         }
         if (importedContent.backdropPath) {
           placeholderImages.push({
             path: importedContent.backdropPath,
-            type: 'backdrop' as const
+            type: 'backdrop'
           });
         }
         importedContent.images = placeholderImages;
       }
+      
+      // Double-check each image in the array has the correct structure
+      importedContent.images = importedContent.images.map(img => ({
+        path: img.path,
+        type: img.type === 'poster' ? 'poster' : 'backdrop'
+      }));
+      
+      console.log("Saving content with images:", importedContent.images.length, importedContent.images);
       
       const savedContent = await addContent(importedContent);
       onImport(savedContent);

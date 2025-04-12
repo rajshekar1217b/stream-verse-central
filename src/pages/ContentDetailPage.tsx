@@ -54,68 +54,43 @@ const ContentDetailPage: React.FC = () => {
         if (contentData) {
           console.log("Content data loaded:", contentData);
           
-          // Create proper images array if none exists or if it's improperly formatted
-          if (!contentData.images || !Array.isArray(contentData.images) || contentData.images.length === 0) {
-            console.log("No images found, creating from poster and backdrop");
-            const images = [];
-            
-            // Add poster to images if it exists
-            if (contentData.posterPath) {
-              images.push({
-                path: contentData.posterPath,
-                type: 'poster' as const
-              });
-            }
-            
-            // Add backdrop to images if it exists
-            if (contentData.backdropPath) {
-              images.push({
-                path: contentData.backdropPath,
-                type: 'backdrop' as const
-              });
-            }
-            
-            contentData.images = images;
-            console.log("Created images from poster and backdrop:", images.length);
-          } else {
-            // Ensure all existing images have proper path and type
-            contentData.images = contentData.images
-              .filter(img => img && img.path && img.type)
+          // Process the images array to ensure it's properly structured
+          let processedImages = [];
+          
+          // Check if images exists and is an array
+          if (contentData.images && Array.isArray(contentData.images)) {
+            // Filter out any invalid image objects
+            processedImages = contentData.images
+              .filter(img => img && typeof img === 'object' && img.path && img.type)
               .map(img => ({
                 path: img.path,
-                type: img.type
+                type: img.type === 'poster' ? 'poster' : 'backdrop' // Ensure type is always one of the two valid options
               }));
-            
-            // Make sure poster is included in images if not already
-            if (contentData.posterPath) {
-              const hasPoster = contentData.images.some(
-                img => img.path === contentData.posterPath && img.type === 'poster'
-              );
               
-              if (!hasPoster) {
-                contentData.images.push({
-                  path: contentData.posterPath,
-                  type: 'poster' as const
-                });
-              }
-            }
-            
-            // Make sure backdrop is included in images if not already
-            if (contentData.backdropPath) {
-              const hasBackdrop = contentData.images.some(
-                img => img.path === contentData.backdropPath && img.type === 'backdrop'
-              );
-              
-              if (!hasBackdrop) {
-                contentData.images.push({
-                  path: contentData.backdropPath,
-                  type: 'backdrop' as const
-                });
-              }
-            }
-            
-            console.log("Processed content images:", contentData.images.length);
+            console.log("Found", processedImages.length, "valid images in content data");
+          } else {
+            console.log("No images array found or improperly formatted, creating from poster and backdrop");
+            processedImages = [];
           }
+          
+          // Always make sure poster and backdrop are included in images
+          if (contentData.posterPath && !processedImages.some(img => img.path === contentData.posterPath)) {
+            processedImages.push({
+              path: contentData.posterPath,
+              type: 'poster'
+            });
+          }
+          
+          if (contentData.backdropPath && !processedImages.some(img => img.path === contentData.backdropPath)) {
+            processedImages.push({
+              path: contentData.backdropPath,
+              type: 'backdrop'
+            });
+          }
+          
+          // Update the content with processed images
+          contentData.images = processedImages;
+          console.log("Final processed images:", processedImages.length);
           
           setContent(contentData);
         } else {
@@ -206,9 +181,11 @@ const ContentDetailPage: React.FC = () => {
                 <EmbeddedVideos videos={content.embedVideos} />
               )}
 
-              {/* Image Gallery */}
+              {/* Image Gallery - with debug info */}
               {content?.images && content.images.length > 0 && (
-                <ImageGallery images={content.images} />
+                <>
+                  <ImageGallery images={content.images} />
+                </>
               )}
 
               {/* TV Show Seasons */}
