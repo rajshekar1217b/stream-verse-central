@@ -1,9 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Content } from '@/types';
 import { BarChart, PieChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +16,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { supabase } from '@/types/supabase-extensions';
 
 interface ViewStats {
   content_id: string;

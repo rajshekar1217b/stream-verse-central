@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getContentById } from '@/services/api';
@@ -13,8 +12,8 @@ import ContentBackdrop from '@/components/ContentBackdrop';
 import CastSection from '@/components/CastSection';
 import TrailerDialog from '@/components/TrailerDialog';
 import CommentsSection from '@/components/CommentsSection';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { supabase } from '@/types/supabase-extensions';
 
 const ContentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
