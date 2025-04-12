@@ -13,7 +13,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { watchProviders } from '@/data/mockData';
-import { CheckCircle, XCircle, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, XCircle, Plus, Trash2, Video } from 'lucide-react';
 
 interface AdminContentFormProps {
   initialContent?: Content;
@@ -38,12 +38,18 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
       genres: [],
       rating: 0,
       watchProviders: [],
+      embedVideos: [],
+      images: []
     }
   );
 
   const [newGenre, setNewGenre] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [providerRedirectLink, setProviderRedirectLink] = useState<string>('');
+  const [newEmbedVideoUrl, setNewEmbedVideoUrl] = useState('');
+  const [newEmbedVideoTitle, setNewEmbedVideoTitle] = useState('');
+  const [newImageUrl, setNewImageUrl] = useState('');
+  const [newImageType, setNewImageType] = useState<'poster' | 'backdrop'>('backdrop');
 
   const isEditMode = !!initialContent;
 
@@ -113,6 +119,51 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
     });
   };
 
+  // New function to handle adding embed video
+  const handleAddEmbedVideo = () => {
+    if (newEmbedVideoUrl.trim()) {
+      setFormData({
+        ...formData,
+        embedVideos: [...(formData.embedVideos || []), {
+          url: newEmbedVideoUrl.trim(),
+          title: newEmbedVideoTitle.trim() || `Video ${(formData.embedVideos?.length || 0) + 1}`
+        }],
+      });
+      setNewEmbedVideoUrl('');
+      setNewEmbedVideoTitle('');
+    }
+  };
+
+  // New function to handle removing embed video
+  const handleRemoveEmbedVideo = (index: number) => {
+    setFormData({
+      ...formData,
+      embedVideos: formData.embedVideos?.filter((_, idx) => idx !== index),
+    });
+  };
+
+  // New function to handle adding image to gallery
+  const handleAddImage = () => {
+    if (newImageUrl.trim()) {
+      setFormData({
+        ...formData,
+        images: [...(formData.images || []), {
+          path: newImageUrl.trim(),
+          type: newImageType
+        }],
+      });
+      setNewImageUrl('');
+    }
+  };
+
+  // New function to handle removing image from gallery
+  const handleRemoveImage = (index: number) => {
+    setFormData({
+      ...formData,
+      images: formData.images?.filter((_, idx) => idx !== index),
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -131,6 +182,8 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
       id: formData.id || Date.now().toString(),
       genres: formData.genres || [],
       rating: Number(formData.rating) || 0,
+      images: formData.images || [],
+      embedVideos: formData.embedVideos || []
     } as Content;
     
     onSave(contentToSave);
@@ -250,6 +303,157 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
             onChange={handleChange}
             className="admin-input"
           />
+        </div>
+      </div>
+
+      {/* New Section: Embed Videos */}
+      <div className="space-y-3 border border-gray-700 p-4 rounded-lg">
+        <Label className="text-lg font-medium flex items-center gap-2">
+          <Video size={18} />
+          Embedded Videos
+        </Label>
+        
+        {/* List of existing embed videos */}
+        {formData.embedVideos && formData.embedVideos.length > 0 ? (
+          <div className="space-y-3">
+            {formData.embedVideos.map((video, index) => (
+              <div key={index} className="flex flex-col bg-gray-800 p-3 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">{video.title}</span>
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveEmbedVideo(index)}
+                    className="text-red-500 h-8 px-2"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+                <div className="text-xs text-gray-400 break-all">{video.url}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm">No videos added yet.</p>
+        )}
+        
+        {/* Form to add new embed video */}
+        <div className="grid grid-cols-1 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="embedVideoTitle" className="text-sm">Video Title</Label>
+            <Input
+              id="embedVideoTitle"
+              value={newEmbedVideoTitle}
+              onChange={(e) => setNewEmbedVideoTitle(e.target.value)}
+              placeholder="Enter video title (optional)"
+              className="admin-input"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="embedVideoUrl" className="text-sm">Video URL</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="embedVideoUrl"
+                value={newEmbedVideoUrl}
+                onChange={(e) => setNewEmbedVideoUrl(e.target.value)}
+                placeholder="Enter YouTube or other embed URL"
+                className="admin-input flex-1"
+              />
+              <Button 
+                type="button"
+                onClick={handleAddEmbedVideo}
+                variant="outline"
+                className="border-gray-700"
+                disabled={!newEmbedVideoUrl.trim()}
+              >
+                <Plus size={16} />
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Support for YouTube, Vimeo, and other embed URLs.
+              Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* New Section: Image Gallery */}
+      <div className="space-y-3 border border-gray-700 p-4 rounded-lg">
+        <Label className="text-lg font-medium">Image Gallery</Label>
+        
+        {/* List of existing gallery images */}
+        {formData.images && formData.images.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {formData.images.map((image, index) => (
+              <div key={index} className="relative group">
+                <img 
+                  src={image.path}
+                  alt={`Gallery image ${index + 1}`}
+                  className="w-full h-24 object-cover rounded-md"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://via.placeholder.com/300x200?text=Image+Error';
+                  }}
+                />
+                <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 rounded">
+                  {image.type}
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                  onClick={() => handleRemoveImage(index)}
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm">No gallery images added yet.</p>
+        )}
+        
+        {/* Form to add new gallery image */}
+        <div className="grid grid-cols-1 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="newImageUrl" className="text-sm">Image URL</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="newImageUrl"
+                value={newImageUrl}
+                onChange={(e) => setNewImageUrl(e.target.value)}
+                placeholder="Enter image URL"
+                className="admin-input flex-1"
+              />
+              <Select 
+                value={newImageType} 
+                onValueChange={(value) => setNewImageType(value as 'poster' | 'backdrop')}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="backdrop">Backdrop</SelectItem>
+                  <SelectItem value="poster">Poster</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                type="button"
+                onClick={handleAddImage}
+                variant="outline"
+                className="border-gray-700"
+                disabled={!newImageUrl.trim()}
+              >
+                <Plus size={16} />
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Add at least 10-15 high-quality images for optimal gallery view.
+            </p>
+          </div>
         </div>
       </div>
 

@@ -22,6 +22,7 @@ interface ImageGalleryProps {
 const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'backdrops' | 'posters'>('all');
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   
   // Handle potential images formatting issues
   const normalizedImages = Array.isArray(images) ? images : [];
@@ -36,6 +37,33 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
   if (normalizedImages.length === 0) {
     return null;
   }
+
+  const handleNextImage = () => {
+    if (fullscreenImage) {
+      const currentIndex = normalizedImages.findIndex(img => img.path === fullscreenImage);
+      const nextIndex = (currentIndex + 1) % normalizedImages.length;
+      setFullscreenImage(normalizedImages[nextIndex].path);
+    }
+  };
+
+  const handlePreviousImage = () => {
+    if (fullscreenImage) {
+      const currentIndex = normalizedImages.findIndex(img => img.path === fullscreenImage);
+      const prevIndex = (currentIndex - 1 + normalizedImages.length) % normalizedImages.length;
+      setFullscreenImage(normalizedImages[prevIndex].path);
+    }
+  };
+
+  // Handle keyboard navigation in fullscreen mode
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') {
+      handleNextImage();
+    } else if (e.key === 'ArrowLeft') {
+      handlePreviousImage();
+    } else if (e.key === 'Escape') {
+      setFullscreenImage(null);
+    }
+  };
 
   return (
     <div className="mt-6 mb-8">
@@ -57,7 +85,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
       <Carousel className="w-full">
         <CarouselContent>
           {displayImages.map((image, index) => (
-            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+            <CarouselItem key={index} className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
               <div 
                 className="aspect-video relative overflow-hidden rounded-md cursor-pointer hover:opacity-90 transition-opacity group"
                 onClick={() => setFullscreenImage(image.path)}
@@ -89,7 +117,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
       
       {/* Fullscreen image dialog */}
       <Dialog open={!!fullscreenImage} onOpenChange={() => setFullscreenImage(null)}>
-        <DialogContent className="sm:max-w-6xl max-h-[90vh] p-0 bg-black/90 border-none">
+        <DialogContent 
+          className="sm:max-w-6xl max-h-[90vh] p-0 bg-black/90 border-none"
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
+        >
           <div className="relative w-full h-full flex items-center justify-center">
             <DialogClose className="absolute right-4 top-4 z-10">
               <Button size="icon" variant="ghost" className="text-white bg-black/50 rounded-full hover:bg-black/70">
@@ -97,6 +129,27 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                 <span className="sr-only">Close</span>
               </Button>
             </DialogClose>
+            
+            {/* Navigation arrows */}
+            <Button 
+              size="icon"
+              variant="ghost" 
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full hover:bg-black/70 z-10"
+              onClick={handlePreviousImage}
+            >
+              <ChevronLeft className="h-6 w-6" />
+              <span className="sr-only">Previous</span>
+            </Button>
+            
+            <Button 
+              size="icon"
+              variant="ghost" 
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 rounded-full hover:bg-black/70 z-10"
+              onClick={handleNextImage}
+            >
+              <ChevronRight className="h-6 w-6" />
+              <span className="sr-only">Next</span>
+            </Button>
             
             {fullscreenImage && (
               <img
@@ -108,6 +161,13 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                   target.src = 'https://via.placeholder.com/1280x720?text=Image+Error';
                 }}
               />
+            )}
+            
+            {/* Image counter */}
+            {fullscreenImage && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded-full">
+                {normalizedImages.findIndex(img => img.path === fullscreenImage) + 1} / {normalizedImages.length}
+              </div>
             )}
           </div>
         </DialogContent>

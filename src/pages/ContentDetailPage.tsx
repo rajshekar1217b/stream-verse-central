@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getContentById } from '@/services/api';
@@ -12,6 +13,7 @@ import ContentBackdrop from '@/components/ContentBackdrop';
 import CastSection from '@/components/CastSection';
 import TrailerDialog from '@/components/TrailerDialog';
 import CommentsSection from '@/components/CommentsSection';
+import EmbeddedVideos from '@/components/EmbeddedVideos';
 import { toast } from 'sonner';
 import { supabase } from '@/types/supabase-extensions';
 
@@ -83,6 +85,10 @@ const ContentDetailPage: React.FC = () => {
             console.log("Watch providers:", contentData.watchProviders);
           } else {
             console.log("No watch providers available");
+          }
+          
+          if (contentData.embedVideos && contentData.embedVideos.length > 0) {
+            console.log("Embedded videos:", contentData.embedVideos.length);
           }
         } else {
           toast.error("Content not found");
@@ -166,6 +172,11 @@ const ContentDetailPage: React.FC = () => {
             {/* Right Column - Content Details */}
             <div className="md:w-3/4">
               <ContentDetails content={content} />
+
+              {/* Embedded Videos Section */}
+              {content.embedVideos && content.embedVideos.length > 0 && (
+                <EmbeddedVideos videos={content.embedVideos} />
+              )}
 
               {/* Image Gallery */}
               {content.images && content.images.length > 0 && (
