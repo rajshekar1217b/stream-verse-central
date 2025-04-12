@@ -22,10 +22,16 @@ interface ImageGalleryProps {
 const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'backdrops' | 'posters'>('all');
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   
   // Handle potential images formatting issues
-  const normalizedImages = Array.isArray(images) ? images : [];
+  const normalizedImages = React.useMemo(() => {
+    if (!Array.isArray(images) || images.length === 0) {
+      return [];
+    }
+    
+    // Make sure all images have proper paths (not undefined or empty)
+    return images.filter(img => img && img.path && img.type);
+  }, [images]);
   
   const backdrops = normalizedImages.filter(img => img.type === 'backdrop');
   const posters = normalizedImages.filter(img => img.type === 'poster');

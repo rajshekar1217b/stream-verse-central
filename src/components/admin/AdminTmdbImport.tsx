@@ -35,36 +35,45 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       const content = await importFromTmdb(tmdbId, contentType);
       
       if (content) {
+        // Process images from TMDB import
+        let processedImages = [];
+        
         // Ensure images is an array before filtering
         if (content.images && Array.isArray(content.images)) {
-          if (!includePosters) {
-            content.images = content.images.filter(img => img.type !== 'poster');
-          }
-          if (!includeBackdrops) {
-            content.images = content.images.filter(img => img.type !== 'backdrop');
-          }
-        } else if (!content.images) {
-          // Create placeholder images array if none exist
-          const placeholderImages = [];
-          
-          if (content.posterPath) {
-            placeholderImages.push({
-              path: content.posterPath,
-              type: 'poster' as const
-            });
-          }
-          
-          if (content.backdropPath) {
-            placeholderImages.push({
-              path: content.backdropPath,
-              type: 'backdrop' as const
-            });
-          }
-          
-          content.images = placeholderImages;
-          console.log("Created placeholder images in import:", placeholderImages.length);
+          processedImages = content.images.filter(img => img && img.path && img.type);
+        } else {
+          processedImages = [];
         }
         
+        // Always include poster and backdrop in images if they exist
+        if (content.posterPath && !processedImages.some(img => img.path === content.posterPath)) {
+          processedImages.push({
+            path: content.posterPath,
+            type: 'poster' as const
+          });
+        }
+        
+        if (content.backdropPath && !processedImages.some(img => img.path === content.backdropPath)) {
+          processedImages.push({
+            path: content.backdropPath,
+            type: 'backdrop' as const
+          });
+        }
+        
+        // Apply filtering based on user preferences
+        if (!includePosters) {
+          processedImages = processedImages.filter(img => img.type !== 'poster');
+        }
+        if (!includeBackdrops) {
+          processedImages = processedImages.filter(img => img.type !== 'backdrop');
+        }
+        
+        // Update the content with processed images
+        content.images = processedImages;
+        
+        console.log("Processed images for TMDB import:", processedImages.length);
+        
+        // Remove extra data if option is turned off
         if (!includeExtras && content) {
           content.cast = undefined;
           content.watchProviders = undefined;

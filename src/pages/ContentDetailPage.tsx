@@ -54,42 +54,70 @@ const ContentDetailPage: React.FC = () => {
         if (contentData) {
           console.log("Content data loaded:", contentData);
           
-          // Create placeholder images if none exist or if they're improperly formatted
+          // Create proper images array if none exists or if it's improperly formatted
           if (!contentData.images || !Array.isArray(contentData.images) || contentData.images.length === 0) {
-            console.log("No images found, creating placeholders");
-            // Create placeholder images array using poster and backdrop
-            const placeholderImages = [];
+            console.log("No images found, creating from poster and backdrop");
+            const images = [];
             
+            // Add poster to images if it exists
             if (contentData.posterPath) {
-              placeholderImages.push({
+              images.push({
                 path: contentData.posterPath,
                 type: 'poster' as const
               });
             }
             
+            // Add backdrop to images if it exists
             if (contentData.backdropPath) {
-              placeholderImages.push({
+              images.push({
                 path: contentData.backdropPath,
                 type: 'backdrop' as const
               });
             }
             
-            contentData.images = placeholderImages;
-            console.log("Created placeholder images:", placeholderImages.length);
+            contentData.images = images;
+            console.log("Created images from poster and backdrop:", images.length);
           } else {
-            console.log("Content images:", contentData.images.length);
+            // Ensure all existing images have proper path and type
+            contentData.images = contentData.images
+              .filter(img => img && img.path && img.type)
+              .map(img => ({
+                path: img.path,
+                type: img.type
+              }));
+            
+            // Make sure poster is included in images if not already
+            if (contentData.posterPath) {
+              const hasPoster = contentData.images.some(
+                img => img.path === contentData.posterPath && img.type === 'poster'
+              );
+              
+              if (!hasPoster) {
+                contentData.images.push({
+                  path: contentData.posterPath,
+                  type: 'poster' as const
+                });
+              }
+            }
+            
+            // Make sure backdrop is included in images if not already
+            if (contentData.backdropPath) {
+              const hasBackdrop = contentData.images.some(
+                img => img.path === contentData.backdropPath && img.type === 'backdrop'
+              );
+              
+              if (!hasBackdrop) {
+                contentData.images.push({
+                  path: contentData.backdropPath,
+                  type: 'backdrop' as const
+                });
+              }
+            }
+            
+            console.log("Processed content images:", contentData.images.length);
           }
           
           setContent(contentData);
-          if (contentData.watchProviders && contentData.watchProviders.length > 0) {
-            console.log("Watch providers:", contentData.watchProviders);
-          } else {
-            console.log("No watch providers available");
-          }
-          
-          if (contentData.embedVideos && contentData.embedVideos.length > 0) {
-            console.log("Embedded videos:", contentData.embedVideos.length);
-          }
         } else {
           toast.error("Content not found");
           navigate('/not-found');
@@ -126,7 +154,7 @@ const ContentDetailPage: React.FC = () => {
       <Header />
 
       <main className="pt-16">
-        <ContentBackdrop backdropPath={content.backdropPath} />
+        <ContentBackdrop backdropPath={content?.backdropPath} />
 
         <div className="container mx-auto px-4 pb-16">
           <div className="flex flex-col md:flex-row md:gap-8">
@@ -134,8 +162,8 @@ const ContentDetailPage: React.FC = () => {
             <div className="md:w-1/4 mb-6 md:mb-0">
               <div className="rounded-lg overflow-hidden shadow-lg">
                 <img
-                  src={content.posterPath || 'https://via.placeholder.com/500x750?text=No+Poster'}
-                  alt={content.title}
+                  src={content?.posterPath || 'https://via.placeholder.com/500x750?text=No+Poster'}
+                  alt={content?.title}
                   className="w-full h-auto"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -145,7 +173,7 @@ const ContentDetailPage: React.FC = () => {
               </div>
 
               {/* Trailer Button */}
-              {content.trailerUrl && (
+              {content?.trailerUrl && (
                 <TrailerDialog 
                   title={content.title}
                   trailerUrl={content.trailerUrl}
@@ -156,7 +184,7 @@ const ContentDetailPage: React.FC = () => {
               
               {/* Watch Providers */}
               <div className="mt-6">
-                {content.watchProviders && content.watchProviders.length > 0 ? (
+                {content?.watchProviders && content.watchProviders.length > 0 ? (
                   <WatchProviders providers={content.watchProviders} />
                 ) : (
                   <div>
@@ -174,27 +202,27 @@ const ContentDetailPage: React.FC = () => {
               <ContentDetails content={content} />
 
               {/* Embedded Videos Section */}
-              {content.embedVideos && content.embedVideos.length > 0 && (
+              {content?.embedVideos && content.embedVideos.length > 0 && (
                 <EmbeddedVideos videos={content.embedVideos} />
               )}
 
               {/* Image Gallery */}
-              {content.images && content.images.length > 0 && (
+              {content?.images && content.images.length > 0 && (
                 <ImageGallery images={content.images} />
               )}
 
               {/* TV Show Seasons */}
-              {content.type === 'tv' && content.seasons && content.seasons.length > 0 && (
+              {content?.type === 'tv' && content.seasons && content.seasons.length > 0 && (
                 <TVShowSeasons seasons={content.seasons} />
               )}
 
               {/* Cast Section */}
-              {content.cast && content.cast.length > 0 && (
+              {content?.cast && content.cast.length > 0 && (
                 <CastSection cast={content.cast} />
               )}
 
               {/* Comments Section */}
-              <CommentsSection contentId={content.id} contentTitle={content.title} />
+              <CommentsSection contentId={content?.id} contentTitle={content?.title} />
             </div>
           </div>
         </div>
