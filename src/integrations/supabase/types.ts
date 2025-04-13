@@ -130,8 +130,10 @@ export type Database = {
           cast_info: Json | null
           created_at: string | null
           duration: string | null
+          embed_videos: Json | null
           genres: string[]
           id: string
+          images: Json | null
           overview: string
           poster_path: string | null
           rating: number | null
@@ -148,8 +150,10 @@ export type Database = {
           cast_info?: Json | null
           created_at?: string | null
           duration?: string | null
+          embed_videos?: Json | null
           genres?: string[]
           id: string
+          images?: Json | null
           overview: string
           poster_path?: string | null
           rating?: number | null
@@ -166,8 +170,10 @@ export type Database = {
           cast_info?: Json | null
           created_at?: string | null
           duration?: string | null
+          embed_videos?: Json | null
           genres?: string[]
           id?: string
+          images?: Json | null
           overview?: string
           poster_path?: string | null
           rating?: number | null
