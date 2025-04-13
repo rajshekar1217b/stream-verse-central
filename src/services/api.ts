@@ -1,5 +1,6 @@
+
 import { supabase } from '@/types/supabase-extensions';
-import { Content } from '@/types';
+import { Content, Category } from '@/types';
 
 // Get all content
 export const getAllContent = async (): Promise<Content[]> => {
@@ -21,17 +22,19 @@ export const getAllContent = async (): Promise<Content[]> => {
       posterPath: item.poster_path,
       backdropPath: item.backdrop_path,
       releaseDate: item.release_date,
-      type: item.type,
+      // Ensure type is 'movie' or 'tv' as required by Content interface
+      type: item.type === 'movie' ? 'movie' : 'tv',
       genres: item.genres || [],
       rating: item.rating || 0,
       duration: item.duration,
       status: item.status,
-	  trailerUrl: item.trailer_url,
+      trailerUrl: item.trailer_url,
       watchProviders: [], // These would be fetched separately
-	  seasons: [],
-	  cast: [],
-    embedVideos: item.embed_videos || [],
-    images: item.images || [],
+      seasons: [],
+      cast: [],
+      // Use custom data properties if they exist, otherwise empty arrays
+      embedVideos: item.embed_videos || [],
+      images: item.images || [],
     }));
 
     return contents;
@@ -52,14 +55,14 @@ export const addContent = async (content: Content): Promise<Content> => {
         poster_path: content.posterPath,
         backdrop_path: content.backdropPath,
         release_date: content.releaseDate,
-        type: content.type,
+        type: content.type, // This is already 'movie' or 'tv' from Content interface
         genres: content.genres,
         rating: content.rating,
         duration: content.duration,
         status: content.status,
-		trailer_url: content.trailerUrl,
-    embed_videos: content.embedVideos,
-    images: content.images,
+        trailer_url: content.trailerUrl,
+        embed_videos: content.embedVideos,
+        images: content.images,
       })
       .select()
       .single();
@@ -77,17 +80,18 @@ export const addContent = async (content: Content): Promise<Content> => {
       posterPath: data.poster_path,
       backdropPath: data.backdrop_path,
       releaseDate: data.release_date,
-      type: data.type,
-      genres: data.genres,
-      rating: data.rating,
+      // Ensure type is 'movie' or 'tv' as required by Content interface
+      type: data.type === 'movie' ? 'movie' : 'tv',
+      genres: data.genres || [],
+      rating: data.rating || 0,
       duration: data.duration,
       status: data.status,
-	  trailerUrl: data.trailer_url,
+      trailerUrl: data.trailer_url,
       watchProviders: [], // These would be fetched separately
-	  seasons: [],
-	  cast: [],
-    embedVideos: data.embed_videos || [],
-    images: data.images || [],
+      seasons: [],
+      cast: [],
+      embedVideos: data.embed_videos || [],
+      images: data.images || [],
     };
   } catch (error) {
     console.error('Error in addContent:', error);
@@ -120,7 +124,7 @@ export const updateContent = async (content: Content): Promise<Content> => {
         poster_path: content.posterPath,
         backdrop_path: content.backdropPath,
         release_date: content.releaseDate,
-        type: content.type,
+        type: content.type, // This is already 'movie' or 'tv' from Content interface
         genres: content.genres,
         rating: content.rating,
         duration: content.duration,
@@ -152,9 +156,10 @@ export const updateContent = async (content: Content): Promise<Content> => {
       posterPath: data.poster_path,
       backdropPath: data.backdrop_path,
       releaseDate: data.release_date,
-      type: data.type,
-      genres: data.genres,
-      rating: data.rating,
+      // Ensure type is 'movie' or 'tv' as required by Content interface
+      type: data.type === 'movie' ? 'movie' : 'tv',
+      genres: data.genres || [],
+      rating: data.rating || 0,
       duration: data.duration,
       status: data.status,
       trailerUrl: data.trailer_url,
@@ -213,14 +218,16 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       posterPath: data.poster_path,
       backdropPath: data.backdrop_path,
       releaseDate: data.release_date,
-      type: data.type,
+      // Ensure type is 'movie' or 'tv' as required by Content interface
+      type: data.type === 'movie' ? 'movie' : 'tv',
       genres: data.genres || [],
       rating: data.rating || 0,
       duration: data.duration,
       status: data.status,
       trailerUrl: data.trailer_url,
-      seasons: data.seasons || [],
-      cast: data.cast_info || [],
+      // Ensure these are properly typed arrays
+      seasons: Array.isArray(data.seasons) ? data.seasons : [],
+      cast: Array.isArray(data.cast_info) ? data.cast_info : [],
       watchProviders: [], // Fetch from watchProviders table or use mock data
       embedVideos: data.embed_videos || [], // Get embedded videos
       images: data.images || [], // Get images
@@ -231,5 +238,208 @@ export const getContentById = async (id: string): Promise<Content | null> => {
   } catch (error) {
     console.error('Error in getContentById:', error);
     throw error;
+  }
+};
+
+// Get content by type (movie, tv, or all)
+export const getContentByType = async (type: 'movie' | 'tv' | 'all'): Promise<Content[]> => {
+  try {
+    let query = supabase.from('contents').select('*');
+    
+    // Filter by type if not 'all'
+    if (type !== 'all') {
+      query = query.eq('type', type);
+    }
+    
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(`Error fetching ${type} content:`, error);
+      throw error;
+    }
+
+    // Convert database fields to Content interface
+    const contents: Content[] = data.map(item => ({
+      id: item.id,
+      title: item.title,
+      overview: item.overview,
+      posterPath: item.poster_path,
+      backdropPath: item.backdrop_path,
+      releaseDate: item.release_date,
+      // Ensure type is 'movie' or 'tv' as required by Content interface
+      type: item.type === 'movie' ? 'movie' : 'tv',
+      genres: item.genres || [],
+      rating: item.rating || 0,
+      duration: item.duration,
+      status: item.status,
+      trailerUrl: item.trailer_url,
+      watchProviders: [],
+      seasons: [],
+      cast: [],
+      embedVideos: item.embed_videos || [],
+      images: item.images || [],
+    }));
+
+    return contents;
+  } catch (error) {
+    console.error(`Error in getContentByType:`, error);
+    throw error;
+  }
+};
+
+// Get categories with their content
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    // First, get all categories
+    const { data: categoriesData, error: categoriesError } = await supabase
+      .from('categories')
+      .select('*');
+
+    if (categoriesError) {
+      console.error('Error fetching categories:', categoriesError);
+      throw categoriesError;
+    }
+
+    // Then, get category_contents join table
+    const { data: categoryContentsData, error: categoryContentsError } = await supabase
+      .from('category_contents')
+      .select('*');
+
+    if (categoryContentsError) {
+      console.error('Error fetching category contents:', categoryContentsError);
+      throw categoryContentsError;
+    }
+
+    // Finally, get all content
+    const contents = await getAllContent();
+
+    // Now map categories with their content
+    const categories: Category[] = categoriesData.map(category => {
+      // Find all content IDs for this category
+      const contentIds = categoryContentsData
+        .filter(cc => cc.category_id === category.id)
+        .map(cc => cc.content_id);
+      
+      // Find the actual content items
+      const categoryContents = contents.filter(content => contentIds.includes(content.id));
+      
+      return {
+        id: category.id,
+        name: category.name,
+        contents: categoryContents
+      };
+    });
+
+    return categories;
+  } catch (error) {
+    console.error('Error in getCategories:', error);
+    throw error;
+  }
+};
+
+// Search content by query
+export const searchContent = async (query: string): Promise<Content[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*')
+      .or(`title.ilike.%${query}%,overview.ilike.%${query}%`);
+
+    if (error) {
+      console.error('Error searching content:', error);
+      throw error;
+    }
+
+    // Convert database fields to Content interface
+    const contents: Content[] = data.map(item => ({
+      id: item.id,
+      title: item.title,
+      overview: item.overview,
+      posterPath: item.poster_path,
+      backdropPath: item.backdrop_path,
+      releaseDate: item.release_date,
+      // Ensure type is 'movie' or 'tv' as required by Content interface
+      type: item.type === 'movie' ? 'movie' : 'tv',
+      genres: item.genres || [],
+      rating: item.rating || 0,
+      duration: item.duration,
+      status: item.status,
+      trailerUrl: item.trailer_url,
+      watchProviders: [],
+      seasons: [],
+      cast: [],
+      embedVideos: item.embed_videos || [],
+      images: item.images || [],
+    }));
+
+    return contents;
+  } catch (error) {
+    console.error('Error in searchContent:', error);
+    throw error;
+  }
+};
+
+// Import content from TMDB
+export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<Content | null> => {
+  try {
+    // This is a placeholder for a real TMDB API integration
+    // In a real implementation, you would call the TMDB API here
+    console.log(`Importing ${type} with ID ${id} from TMDB`);
+    
+    // Mock data for demonstration purposes
+    const mockContent: Content = {
+      id: `tmdb-${id}`,
+      title: `Sample ${type === 'movie' ? 'Movie' : 'TV Show'} ${id}`,
+      overview: `This is a sample ${type} imported from TMDB with ID ${id}.`,
+      posterPath: `https://image.tmdb.org/t/p/w500/sample-poster-${id}.jpg`,
+      backdropPath: `https://image.tmdb.org/t/p/original/sample-backdrop-${id}.jpg`,
+      releaseDate: new Date().toISOString().split('T')[0],
+      type: type,
+      genres: ['Drama', 'Action'],
+      rating: 8.5,
+      duration: type === 'movie' ? '2h 15m' : null,
+      status: 'Released',
+      trailerUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      watchProviders: [],
+      seasons: type === 'tv' ? [
+        {
+          id: `s1-${id}`,
+          name: 'Season 1',
+          seasonNumber: 1,
+          episodeCount: 10,
+          overview: 'First season overview',
+          episodes: []
+        }
+      ] : [],
+      cast: [
+        {
+          id: `cast1-${id}`,
+          name: 'Actor Name',
+          character: 'Character Name',
+          profilePath: `https://image.tmdb.org/t/p/w185/sample-profile-${id}.jpg`
+        }
+      ],
+      embedVideos: [
+        {
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          title: 'Official Trailer'
+        }
+      ],
+      images: [
+        {
+          path: `https://image.tmdb.org/t/p/w500/sample-poster-${id}.jpg`,
+          type: 'poster'
+        },
+        {
+          path: `https://image.tmdb.org/t/p/original/sample-backdrop-${id}.jpg`,
+          type: 'backdrop'
+        }
+      ]
+    };
+    
+    return mockContent;
+  } catch (error) {
+    console.error('Error importing from TMDB:', error);
+    return null;
   }
 };

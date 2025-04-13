@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { useEffect } from "react";
+import { ensureDatabaseStructure } from "@/utils/supabaseUtils";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -21,31 +23,44 @@ import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/movies" element={<MoviesPage />} />
-              <Route path="/tv-shows" element={<TVShowsPage />} />
-              <Route path="/categories" element={<CategoryPage />} />
-              <Route path="/content/:id" element={<ContentDetailPage />} />
-              <Route path="/search" element={<SearchPage />} />
-              <Route path="/admin-login" element={<AdminLoginPage />} />
-              <Route path="/admin" element={<AdminDashboardPage />} />
-              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Check and ensure database structure when the app loads
+  useEffect(() => {
+    ensureDatabaseStructure()
+      .then((result) => {
+        if (result) {
+          console.log("Database structure verified for embedded videos and images.");
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/movies" element={<MoviesPage />} />
+                <Route path="/tv-shows" element={<TVShowsPage />} />
+                <Route path="/categories" element={<CategoryPage />} />
+                <Route path="/content/:id" element={<ContentDetailPage />} />
+                <Route path="/search" element={<SearchPage />} />
+                <Route path="/admin-login" element={<AdminLoginPage />} />
+                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
