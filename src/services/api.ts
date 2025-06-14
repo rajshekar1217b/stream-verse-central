@@ -1,6 +1,6 @@
 
 import { supabase } from '@/types/supabase-extensions';
-import { Content, Category, Season, CastMember } from '@/types';
+import { Content, Category, Season, CastMember, WatchProvider } from '@/types';
 
 // Helper function to safely parse JSON data to typed arrays
 const parseJsonArray = <T>(data: any, fallback: T[] = []): T[] => {
@@ -22,6 +22,21 @@ const parseEmbedVideos = (data: any): { url: string; title: string; }[] => {
 // Helper function to safely parse images
 const parseImages = (data: any): { path: string; type: 'poster' | 'backdrop'; }[] => {
   return parseJsonArray<{ path: string; type: 'poster' | 'backdrop'; }>(data, []);
+};
+
+// Helper function to safely parse watch providers
+const parseWatchProviders = (data: any): WatchProvider[] => {
+  return parseJsonArray<WatchProvider>(data, []);
+};
+
+// Helper function to safely parse seasons
+const parseSeasons = (data: any): Season[] => {
+  return parseJsonArray<Season>(data, []);
+};
+
+// Helper function to safely parse cast members
+const parseCastMembers = (data: any): CastMember[] => {
+  return parseJsonArray<CastMember>(data, []);
 };
 
 // Get all content
@@ -51,9 +66,9 @@ export const getAllContent = async (): Promise<Content[]> => {
       duration: item.duration,
       status: item.status,
       trailerUrl: item.trailer_url,
-      watchProviders: [], // These would be fetched separately
-      seasons: [],
-      cast: [],
+      watchProviders: parseWatchProviders(item.watch_providers),
+      seasons: parseSeasons(item.seasons),
+      cast: parseCastMembers(item.cast_info),
       // Use custom data properties if they exist, otherwise empty arrays
       embedVideos: parseEmbedVideos(item.embed_videos),
       images: parseImages(item.images),
@@ -86,6 +101,9 @@ export const addContent = async (content: Content): Promise<Content> => {
         trailer_url: content.trailerUrl,
         embed_videos: content.embedVideos,
         images: content.images,
+        watch_providers: content.watchProviders,
+        seasons: content.seasons,
+        cast_info: content.cast,
       })
       .select()
       .single();
@@ -110,9 +128,9 @@ export const addContent = async (content: Content): Promise<Content> => {
       duration: data.duration,
       status: data.status,
       trailerUrl: data.trailer_url,
-      watchProviders: [], // These would be fetched separately
-      seasons: [],
-      cast: [],
+      watchProviders: parseWatchProviders(data.watch_providers),
+      seasons: parseSeasons(data.seasons),
+      cast: parseCastMembers(data.cast_info),
       embedVideos: parseEmbedVideos(data.embed_videos),
       images: parseImages(data.images),
     };
@@ -127,17 +145,20 @@ export const updateContent = async (content: Content): Promise<Content> => {
   try {
     console.log("Updating content with ID:", content.id, "Data:", content);
     
-    // Make sure embedVideos property is properly formatted before saving
+    // Make sure all properties are properly formatted before saving
     const contentToUpdate = { 
       ...content,
       // Ensure these properties have the right format
       embedVideos: Array.isArray(content.embedVideos) ? content.embedVideos : [],
-      images: Array.isArray(content.images) ? content.images : []
+      images: Array.isArray(content.images) ? content.images : [],
+      watchProviders: Array.isArray(content.watchProviders) ? content.watchProviders : [],
+      seasons: Array.isArray(content.seasons) ? content.seasons : [],
+      cast: Array.isArray(content.cast) ? content.cast : []
     };
     
     // Log what we're about to save
     console.log("Content prepared for update:", contentToUpdate);
-    console.log("embedVideos to be saved:", contentToUpdate.embedVideos);
+    console.log("watchProviders to be saved:", contentToUpdate.watchProviders);
     
     const { data, error } = await supabase
       .from('contents')
@@ -153,10 +174,12 @@ export const updateContent = async (content: Content): Promise<Content> => {
         duration: content.duration,
         status: content.status,
         trailer_url: content.trailerUrl,
-        // Add embedVideos to the database update
+        // Add all the array fields to the database update
         embed_videos: content.embedVideos,
-        // Add images to the database update
         images: content.images,
+        watch_providers: content.watchProviders,
+        seasons: content.seasons,
+        cast_info: content.cast,
         // Add updated timestamp
         updated_at: new Date().toISOString()
       })
@@ -186,11 +209,11 @@ export const updateContent = async (content: Content): Promise<Content> => {
       duration: data.duration,
       status: data.status,
       trailerUrl: data.trailer_url,
-      watchProviders: [], // These would be fetched separately
+      watchProviders: parseWatchProviders(data.watch_providers),
       embedVideos: parseEmbedVideos(data.embed_videos),
       images: parseImages(data.images),
-      seasons: [],
-      cast: [],
+      seasons: parseSeasons(data.seasons),
+      cast: parseCastMembers(data.cast_info),
     };
   } catch (error) {
     console.error('Error in updateContent:', error);
@@ -250,9 +273,9 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       status: data.status,
       trailerUrl: data.trailer_url,
       // Ensure these are properly typed arrays
-      seasons: parseJsonArray<Season>(data.seasons, []),
-      cast: parseJsonArray<CastMember>(data.cast_info, []),
-      watchProviders: [], // Fetch from watchProviders table or use mock data
+      seasons: parseSeasons(data.seasons),
+      cast: parseCastMembers(data.cast_info),
+      watchProviders: parseWatchProviders(data.watch_providers),
       embedVideos: parseEmbedVideos(data.embed_videos),
       images: parseImages(data.images),
     };
@@ -297,9 +320,9 @@ export const getContentByType = async (type: 'movie' | 'tv' | 'all'): Promise<Co
       duration: item.duration,
       status: item.status,
       trailerUrl: item.trailer_url,
-      watchProviders: [],
-      seasons: [],
-      cast: [],
+      watchProviders: parseWatchProviders(item.watch_providers),
+      seasons: parseSeasons(item.seasons),
+      cast: parseCastMembers(item.cast_info),
       embedVideos: parseEmbedVideos(item.embed_videos),
       images: parseImages(item.images),
     }));
