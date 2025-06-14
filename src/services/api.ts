@@ -87,7 +87,6 @@ export const addContent = async (content: Content): Promise<Content> => {
     const { data, error } = await supabase
       .from('contents')
       .insert({
-        id: content.id, // Include the id field
         title: content.title,
         overview: content.overview,
         poster_path: content.posterPath,
@@ -99,11 +98,11 @@ export const addContent = async (content: Content): Promise<Content> => {
         duration: content.duration,
         status: content.status,
         trailer_url: content.trailerUrl,
-        embed_videos: content.embedVideos,
-        images: content.images,
-        watch_providers: content.watchProviders,
-        seasons: content.seasons,
-        cast_info: content.cast,
+        embed_videos: JSON.stringify(content.embedVideos || []),
+        images: JSON.stringify(content.images || []),
+        watch_providers: JSON.stringify(content.watchProviders || []),
+        seasons: JSON.stringify(content.seasons || []),
+        cast_info: JSON.stringify(content.cast || []),
       })
       .select()
       .single();
@@ -174,12 +173,12 @@ export const updateContent = async (content: Content): Promise<Content> => {
         duration: content.duration,
         status: content.status,
         trailer_url: content.trailerUrl,
-        // Add all the array fields to the database update
-        embed_videos: content.embedVideos,
-        images: content.images,
-        watch_providers: content.watchProviders,
-        seasons: content.seasons,
-        cast_info: content.cast,
+        // Add all the array fields to the database update - stringify them properly
+        embed_videos: JSON.stringify(content.embedVideos || []),
+        images: JSON.stringify(content.images || []),
+        watch_providers: JSON.stringify(content.watchProviders || []),
+        seasons: JSON.stringify(content.seasons || []),
+        cast_info: JSON.stringify(content.cast || []),
         // Add updated timestamp
         updated_at: new Date().toISOString()
       })
@@ -412,9 +411,9 @@ export const searchContent = async (query: string): Promise<Content[]> => {
       duration: item.duration,
       status: item.status,
       trailerUrl: item.trailer_url,
-      watchProviders: [],
-      seasons: [],
-      cast: [],
+      watchProviders: parseWatchProviders(item.watch_providers),
+      seasons: parseSeasons(item.seasons),
+      cast: parseCastMembers(item.cast_info),
       embedVideos: parseEmbedVideos(item.embed_videos),
       images: parseImages(item.images),
     }));

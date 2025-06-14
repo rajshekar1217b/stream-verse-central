@@ -144,6 +144,7 @@ export type Database = {
           trailer_url: string | null
           type: string
           updated_at: string | null
+          watch_providers: Json | null
         }
         Insert: {
           backdrop_path?: string | null
@@ -164,6 +165,7 @@ export type Database = {
           trailer_url?: string | null
           type: string
           updated_at?: string | null
+          watch_providers?: Json | null
         }
         Update: {
           backdrop_path?: string | null
@@ -184,6 +186,7 @@ export type Database = {
           trailer_url?: string | null
           type?: string
           updated_at?: string | null
+          watch_providers?: Json | null
         }
         Relationships: []
       }
