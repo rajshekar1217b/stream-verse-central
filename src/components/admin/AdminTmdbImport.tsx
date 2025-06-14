@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { importFromTmdb, addContent } from '@/services/api';
 import { Content } from '@/types';
@@ -32,7 +33,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
 
     setIsLoading(true);
     try {
-      const content = await importFromTmdb(tmdbId, contentType);
+      const content = await importFromTmdb(tmdbId.trim(), contentType);
       
       if (content) {
         // Process images from TMDB import - make sure they are properly structured
@@ -47,12 +48,6 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               path: img.path,
               type: img.type === 'poster' ? 'poster' : 'backdrop'
             }));
-        } else if (content.images && typeof content.images === 'object' && 
-                   typeof content.images === 'object' && 
-                   'value' in content.images && 
-                   '_type' in content.images) {
-          // Handle the case where images comes as {_type: 'undefined', value: 'undefined'}
-          processedImages = [];
         }
         
         // Always include poster and backdrop in images if they exist
@@ -86,7 +81,6 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         // Remove extra data if option is turned off
         if (!includeExtras && content) {
           content.cast = [];
-          // Don't remove watchProviders here as they're now auto-fetched
         }
         
         // Remove watch providers if auto-fetch is disabled
@@ -106,7 +100,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       }
     } catch (error) {
       console.error('Import error:', error);
-      toast.error('An error occurred during import');
+      toast.error(error instanceof Error ? error.message : 'An error occurred during import');
     } finally {
       setIsLoading(false);
     }
@@ -144,15 +138,16 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       }));
       
       console.log("Saving content with images:", contentToSave.images.length, contentToSave.images);
+      console.log("Saving content with watch providers:", contentToSave.watchProviders?.length, contentToSave.watchProviders);
       
       const savedContent = await addContent(contentToSave);
       onImport(savedContent);
       setTmdbId('');
       setImportedContent(null);
-      toast.success('Content successfully added to library');
+      toast.success(`"${savedContent.title}" successfully added to library with ${savedContent.watchProviders?.length || 0} streaming providers`);
     } catch (error) {
       console.error('Error adding imported content:', error);
-      toast.error('Failed to save content to library');
+      toast.error(error instanceof Error ? error.message : 'Failed to save content to library');
     } finally {
       setIsAdding(false);
     }
@@ -178,7 +173,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
           <p className="text-muted-foreground text-sm">
             Enter a TMDB ID to import content details directly from The Movie Database API.
             <br />
-            <span className="text-xs">Examples: Movie IDs (550 for Fight Club), TV Show IDs (1399 for Game of Thrones)</span>
+            <span className="text-xs">Examples: Movie IDs (550 for Fight Club, 238 for The Godfather), TV Show IDs (1399 for Game of Thrones)</span>
           </p>
           
           <Tabs value={contentType} onValueChange={(value) => setContentType(value as 'movie' | 'tv')} className="w-full mb-4">
@@ -199,8 +194,13 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               type="text"
               value={tmdbId}
               onChange={(e) => setTmdbId(e.target.value)}
-              placeholder="Enter TMDB ID (e.g., 550 or 1399)"
+              placeholder="Enter TMDB ID (e.g., 550, 238, 1399)"
               className="admin-input"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleImport();
+                }
+              }}
             />
             
             <Button 

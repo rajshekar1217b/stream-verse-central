@@ -1,3 +1,4 @@
+
 import { supabase } from '@/types/supabase-extensions';
 import { Content, Category, Season, CastMember, WatchProvider } from '@/types';
 
@@ -86,13 +87,13 @@ export const addContent = async (content: Content): Promise<Content> => {
     const { data, error } = await supabase
       .from('contents')
       .insert({
-        id: content.id, // Include the id field as required
+        id: content.id,
         title: content.title,
         overview: content.overview,
         poster_path: content.posterPath,
         backdrop_path: content.backdropPath,
         release_date: content.releaseDate,
-        type: content.type, // This is already 'movie' or 'tv' from Content interface
+        type: content.type,
         genres: content.genres,
         rating: content.rating,
         duration: content.duration,
@@ -120,7 +121,6 @@ export const addContent = async (content: Content): Promise<Content> => {
       posterPath: data.poster_path,
       backdropPath: data.backdrop_path,
       releaseDate: data.release_date,
-      // Ensure type is 'movie' or 'tv' as required by Content interface
       type: data.type === 'movie' ? 'movie' : 'tv',
       genres: data.genres || [],
       rating: data.rating || 0,
@@ -430,8 +430,36 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
   try {
     console.log(`Importing ${type} with ID ${id} from TMDB`);
     
-    // Enhanced mock data with realistic watch providers for demonstration
-    const mockWatchProviders: WatchProvider[] = [
+    // Enhanced mock data with more realistic content based on common TMDB IDs
+    const mockContents: Record<string, Partial<Content>> = {
+      '550': {
+        title: 'Fight Club',
+        overview: 'A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression into a shocking new form of therapy.',
+        rating: 8.4,
+        genres: ['Drama', 'Thriller'],
+        releaseDate: '1999-10-15',
+        duration: '2h 19m'
+      },
+      '238': {
+        title: 'The Godfather',
+        overview: 'Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family.',
+        rating: 9.2,
+        genres: ['Crime', 'Drama'],
+        releaseDate: '1972-03-14',
+        duration: '2h 55m'
+      },
+      '1399': {
+        title: 'Game of Thrones',
+        overview: 'Seven noble families fight for control of the mythical land of Westeros.',
+        rating: 9.3,
+        genres: ['Drama', 'Fantasy', 'Action & Adventure'],
+        releaseDate: '2011-04-17',
+        duration: null
+      }
+    };
+
+    // Enhanced mock watch providers with more realistic data
+    const allWatchProviders: WatchProvider[] = [
       {
         id: 'netflix',
         name: 'Netflix',
@@ -466,29 +494,39 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
         logoPath: 'https://image.tmdb.org/t/p/original/6uhKBfmtzFqOcLousHwZuzcrScK.jpg',
         url: 'https://tv.apple.com',
         redirectLink: 'https://tv.apple.com/movie/' + id
+      },
+      {
+        id: 'hbo-max',
+        name: 'Max',
+        logoPath: 'https://image.tmdb.org/t/p/original/nmU4b2sGJRDGv33RHJ4pJSjXVoa.jpg',
+        url: 'https://www.max.com',
+        redirectLink: 'https://www.max.com/movies/' + id
       }
     ];
 
-    // Randomly select 1-3 providers for realistic simulation
-    const numProviders = Math.floor(Math.random() * 3) + 1;
-    const selectedProviders = mockWatchProviders
+    // Randomly select 1-4 providers for realistic simulation
+    const numProviders = Math.floor(Math.random() * 4) + 1;
+    const selectedProviders = allWatchProviders
       .sort(() => Math.random() - 0.5)
       .slice(0, numProviders);
 
+    // Get specific content data or use defaults
+    const specificContent = mockContents[id] || {};
+    
     const mockContent: Content = {
-      id: `tmdb-${id}`,
-      title: `Sample ${type === 'movie' ? 'Movie' : 'TV Show'} ${id}`,
-      overview: `This is a sample ${type} imported from TMDB with ID ${id}. Watch provider information has been automatically populated.`,
+      id: `tmdb-${id}-${type}`,
+      title: specificContent.title || `Sample ${type === 'movie' ? 'Movie' : 'TV Show'} ${id}`,
+      overview: specificContent.overview || `This is a sample ${type} imported from TMDB with ID ${id}. Watch provider information has been automatically populated.`,
       posterPath: `https://image.tmdb.org/t/p/w500/sample-poster-${id}.jpg`,
       backdropPath: `https://image.tmdb.org/t/p/original/sample-backdrop-${id}.jpg`,
-      releaseDate: new Date().toISOString().split('T')[0],
+      releaseDate: specificContent.releaseDate || new Date().toISOString().split('T')[0],
       type: type,
-      genres: ['Drama', 'Action'],
-      rating: 8.5,
-      duration: type === 'movie' ? '2h 15m' : null,
+      genres: specificContent.genres || ['Drama', 'Action'],
+      rating: specificContent.rating || (7 + Math.random() * 2), // Random rating between 7-9
+      duration: type === 'movie' ? (specificContent.duration || `${90 + Math.floor(Math.random() * 60)}m`) : null,
       status: 'Released',
       trailerUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      watchProviders: selectedProviders, // Automatically populated watch providers
+      watchProviders: selectedProviders,
       seasons: type === 'tv' ? [
         {
           id: `s1-${id}`,
@@ -502,9 +540,15 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
       cast: [
         {
           id: `cast1-${id}`,
-          name: 'Actor Name',
-          character: 'Character Name',
+          name: 'John Doe',
+          character: 'Main Character',
           profilePath: `https://image.tmdb.org/t/p/w185/sample-profile-${id}.jpg`
+        },
+        {
+          id: `cast2-${id}`,
+          name: 'Jane Smith',
+          character: 'Supporting Character',
+          profilePath: `https://image.tmdb.org/t/p/w185/sample-profile2-${id}.jpg`
         }
       ],
       embedVideos: [
@@ -521,6 +565,14 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
         {
           path: `https://image.tmdb.org/t/p/original/sample-backdrop-${id}.jpg`,
           type: 'backdrop'
+        },
+        {
+          path: `https://image.tmdb.org/t/p/w500/sample-still1-${id}.jpg`,
+          type: 'backdrop'
+        },
+        {
+          path: `https://image.tmdb.org/t/p/w500/sample-still2-${id}.jpg`,
+          type: 'backdrop'
         }
       ]
     };
@@ -529,6 +581,6 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
     return mockContent;
   } catch (error) {
     console.error('Error importing from TMDB:', error);
-    return null;
+    throw new Error('Failed to import content from TMDB. Please check the ID and try again.');
   }
 };
