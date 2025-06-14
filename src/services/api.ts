@@ -1,6 +1,28 @@
 
 import { supabase } from '@/types/supabase-extensions';
-import { Content, Category } from '@/types';
+import { Content, Category, Season, CastMember } from '@/types';
+
+// Helper function to safely parse JSON data to typed arrays
+const parseJsonArray = <T>(data: any, fallback: T[] = []): T[] => {
+  if (!data) return fallback;
+  if (Array.isArray(data)) return data as T[];
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+// Helper function to safely parse embed videos
+const parseEmbedVideos = (data: any): { url: string; title: string; }[] => {
+  return parseJsonArray<{ url: string; title: string; }>(data, []);
+};
+
+// Helper function to safely parse images
+const parseImages = (data: any): { path: string; type: 'poster' | 'backdrop'; }[] => {
+  return parseJsonArray<{ path: string; type: 'poster' | 'backdrop'; }>(data, []);
+};
 
 // Get all content
 export const getAllContent = async (): Promise<Content[]> => {
@@ -33,8 +55,8 @@ export const getAllContent = async (): Promise<Content[]> => {
       seasons: [],
       cast: [],
       // Use custom data properties if they exist, otherwise empty arrays
-      embedVideos: item.embed_videos || [],
-      images: item.images || [],
+      embedVideos: parseEmbedVideos(item.embed_videos),
+      images: parseImages(item.images),
     }));
 
     return contents;
@@ -50,6 +72,7 @@ export const addContent = async (content: Content): Promise<Content> => {
     const { data, error } = await supabase
       .from('contents')
       .insert({
+        id: content.id, // Include the id field
         title: content.title,
         overview: content.overview,
         poster_path: content.posterPath,
@@ -90,8 +113,8 @@ export const addContent = async (content: Content): Promise<Content> => {
       watchProviders: [], // These would be fetched separately
       seasons: [],
       cast: [],
-      embedVideos: data.embed_videos || [],
-      images: data.images || [],
+      embedVideos: parseEmbedVideos(data.embed_videos),
+      images: parseImages(data.images),
     };
   } catch (error) {
     console.error('Error in addContent:', error);
@@ -164,9 +187,10 @@ export const updateContent = async (content: Content): Promise<Content> => {
       status: data.status,
       trailerUrl: data.trailer_url,
       watchProviders: [], // These would be fetched separately
-      embedVideos: data.embed_videos || [],
-      images: data.images || [],
-      // ... any other fields
+      embedVideos: parseEmbedVideos(data.embed_videos),
+      images: parseImages(data.images),
+      seasons: [],
+      cast: [],
     };
   } catch (error) {
     console.error('Error in updateContent:', error);
@@ -226,11 +250,11 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       status: data.status,
       trailerUrl: data.trailer_url,
       // Ensure these are properly typed arrays
-      seasons: Array.isArray(data.seasons) ? data.seasons : [],
-      cast: Array.isArray(data.cast_info) ? data.cast_info : [],
+      seasons: parseJsonArray<Season>(data.seasons, []),
+      cast: parseJsonArray<CastMember>(data.cast_info, []),
       watchProviders: [], // Fetch from watchProviders table or use mock data
-      embedVideos: data.embed_videos || [], // Get embedded videos
-      images: data.images || [], // Get images
+      embedVideos: parseEmbedVideos(data.embed_videos),
+      images: parseImages(data.images),
     };
 
     console.log("Fetched content by ID:", content);
@@ -276,8 +300,8 @@ export const getContentByType = async (type: 'movie' | 'tv' | 'all'): Promise<Co
       watchProviders: [],
       seasons: [],
       cast: [],
-      embedVideos: item.embed_videos || [],
-      images: item.images || [],
+      embedVideos: parseEmbedVideos(item.embed_videos),
+      images: parseImages(item.images),
     }));
 
     return contents;
@@ -368,8 +392,8 @@ export const searchContent = async (query: string): Promise<Content[]> => {
       watchProviders: [],
       seasons: [],
       cast: [],
-      embedVideos: item.embed_videos || [],
-      images: item.images || [],
+      embedVideos: parseEmbedVideos(item.embed_videos),
+      images: parseImages(item.images),
     }));
 
     return contents;
