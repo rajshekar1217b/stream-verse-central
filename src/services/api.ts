@@ -87,6 +87,7 @@ export const addContent = async (content: Content): Promise<Content> => {
     const { data, error } = await supabase
       .from('contents')
       .insert({
+        id: content.id, // Include the id field as required
         title: content.title,
         overview: content.overview,
         poster_path: content.posterPath,
