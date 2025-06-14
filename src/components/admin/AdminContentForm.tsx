@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Content, WatchProvider } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -52,6 +51,46 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
   const [newImageType, setNewImageType] = useState<'poster' | 'backdrop'>('backdrop');
 
   const isEditMode = !!initialContent;
+
+  // Initialize form data when initialContent changes
+  useEffect(() => {
+    if (initialContent) {
+      console.log('Initializing form with content:', initialContent);
+      setFormData({
+        id: initialContent.id,
+        title: initialContent.title,
+        overview: initialContent.overview,
+        posterPath: initialContent.posterPath,
+        backdropPath: initialContent.backdropPath,
+        releaseDate: initialContent.releaseDate,
+        type: initialContent.type,
+        genres: initialContent.genres || [],
+        rating: initialContent.rating,
+        duration: initialContent.duration,
+        status: initialContent.status,
+        trailerUrl: initialContent.trailerUrl,
+        watchProviders: initialContent.watchProviders || [],
+        embedVideos: initialContent.embedVideos || [],
+        images: initialContent.images || []
+      });
+    } else {
+      // Reset form for new content
+      setFormData({
+        id: '',
+        title: '',
+        overview: '',
+        posterPath: '',
+        backdropPath: '',
+        releaseDate: '',
+        type: 'movie',
+        genres: [],
+        rating: 0,
+        watchProviders: [],
+        embedVideos: [],
+        images: []
+      });
+    }
+  }, [initialContent]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -176,16 +215,20 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
       return;
     }
     
-    // Generate a placeholder ID if needed
+    // Prepare content for saving
     const contentToSave = {
       ...formData,
       id: formData.id || Date.now().toString(),
       genres: formData.genres || [],
       rating: Number(formData.rating) || 0,
       images: formData.images || [],
-      embedVideos: formData.embedVideos || []
+      embedVideos: formData.embedVideos || [],
+      seasons: formData.seasons || [],
+      cast: formData.cast || [],
+      watchProviders: formData.watchProviders || []
     } as Content;
     
+    console.log('Submitting content:', contentToSave);
     onSave(contentToSave);
   };
 
@@ -198,9 +241,9 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
   }, [selectedProvider]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-ott-card p-6 rounded-lg">
+    <form onSubmit={handleSubmit} className="space-y-6 bg-ott-card p-6 rounded-lg mb-8">
       <h2 className="text-xl font-bold mb-6">
-        {isEditMode ? 'Edit Content' : 'Add New Content'}
+        {isEditMode ? `Edit Content: ${formData.title}` : 'Add New Content'}
       </h2>
       
       {/* Title */}

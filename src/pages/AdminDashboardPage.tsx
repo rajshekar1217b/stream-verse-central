@@ -54,6 +54,7 @@ const AdminDashboardPage: React.FC = () => {
       const newContent = await addContent(content);
       setContents([...contents, newContent]);
       setIsFormVisible(false);
+      setSelectedContent(undefined);
       toast.success('Content added successfully');
     } catch (error) {
       console.error('Error adding content:', error);
@@ -64,6 +65,7 @@ const AdminDashboardPage: React.FC = () => {
   // Handler for updating content - fixed to properly update state
   const handleUpdateContent = async (updatedContent: Content) => {
     try {
+      console.log('Updating content:', updatedContent);
       const result = await updateContent(updatedContent);
       setContents(contents.map(c => c.id === result.id ? result : c));
       setIsFormVisible(false);
@@ -98,9 +100,19 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
   
-  // Handler for editing content
+  // Handler for editing content - Fixed to properly handle edit mode
   const handleEditContent = (content: Content) => {
-    setSelectedContent({...content}); // Create a copy to prevent reference issues
+    console.log('Edit content clicked:', content);
+    // Create a deep copy to prevent reference issues
+    const contentCopy = {
+      ...content,
+      embedVideos: content.embedVideos || [],
+      images: content.images || [],
+      watchProviders: content.watchProviders || [],
+      seasons: content.seasons || [],
+      cast: content.cast || []
+    };
+    setSelectedContent(contentCopy);
     setIsFormVisible(true);
   };
   
@@ -118,10 +130,21 @@ const AdminDashboardPage: React.FC = () => {
   
   // Toggle content form
   const toggleForm = () => {
-    setIsFormVisible(!isFormVisible);
-    if (!isFormVisible) {
-      setSelectedContent(undefined); // Clear selected content when opening form for a new item
+    if (isFormVisible) {
+      // If closing form, reset selected content
+      setIsFormVisible(false);
+      setSelectedContent(undefined);
+    } else {
+      // If opening form for new content, ensure no content is selected
+      setSelectedContent(undefined);
+      setIsFormVisible(true);
     }
+  };
+
+  // Handler to cancel form editing
+  const handleCancelEdit = () => {
+    setIsFormVisible(false);
+    setSelectedContent(undefined);
   };
   
   return (
@@ -134,6 +157,11 @@ const AdminDashboardPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
             <p className="text-gray-400">Manage your OTT platform content</p>
+            {isFormVisible && selectedContent && (
+              <p className="text-sm text-ott-accent mt-1">
+                Editing: {selectedContent.title}
+              </p>
+            )}
           </div>
           
           <div className="flex gap-4">
@@ -165,37 +193,37 @@ const AdminDashboardPage: React.FC = () => {
         </div>
         
         {/* TMDB Import Section */}
-        <AdminTmdbImport onImport={handleTmdbImport} />
+        {!isFormVisible && <AdminTmdbImport onImport={handleTmdbImport} />}
         
         {/* Content Form (visible when adding/editing) */}
         {isFormVisible && (
           <AdminContentForm
+            key={selectedContent?.id || 'new'} // Force re-render when content changes
             initialContent={selectedContent}
             onSave={selectedContent ? handleUpdateContent : handleAddContent}
-            onCancel={() => {
-              setIsFormVisible(false);
-              setSelectedContent(undefined);
-            }}
+            onCancel={handleCancelEdit}
           />
         )}
         
         {/* Content List */}
-        <div className="bg-ott-card p-6 rounded-lg">
-          <h2 className="text-xl font-bold mb-6">Content Library</h2>
-          
-          {isLoading ? (
-            <div className="py-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ott-accent mx-auto"></div>
-              <p className="mt-4 text-gray-400">Loading content...</p>
-            </div>
-          ) : (
-            <AdminContentList
-              contents={contents}
-              onEdit={handleEditContent}
-              onDelete={handleDeleteContent}
-            />
-          )}
-        </div>
+        {!isFormVisible && (
+          <div className="bg-ott-card p-6 rounded-lg">
+            <h2 className="text-xl font-bold mb-6">Content Library</h2>
+            
+            {isLoading ? (
+              <div className="py-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ott-accent mx-auto"></div>
+                <p className="mt-4 text-gray-400">Loading content...</p>
+              </div>
+            ) : (
+              <AdminContentList
+                contents={contents}
+                onEdit={handleEditContent}
+                onDelete={handleDeleteContent}
+              />
+            )}
+          </div>
+        )}
       </main>
       
       <Footer />
