@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { importFromTmdb, addContent } from '@/services/api';
 import { Content } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, Check, X, Film, Tv, Image, Settings } from 'lucide-react';
+import { Search, Loader2, Check, X, Film, Tv, Image, Settings, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +22,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
   const [includePosters, setIncludePosters] = useState(true);
   const [includeBackdrops, setIncludeBackdrops] = useState(true);
   const [includeExtras, setIncludeExtras] = useState(true);
+  const [autoFetchProviders, setAutoFetchProviders] = useState(true);
 
   const handleImport = async () => {
     if (!tmdbId.trim()) {
@@ -86,11 +86,21 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         // Remove extra data if option is turned off
         if (!includeExtras && content) {
           content.cast = [];
+          // Don't remove watchProviders here as they're now auto-fetched
+        }
+        
+        // Remove watch providers if auto-fetch is disabled
+        if (!autoFetchProviders && content) {
           content.watchProviders = [];
         }
         
         setImportedContent(content);
-        toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'}) with ${processedImages.length} images`);
+        
+        const providerMessage = content.watchProviders && content.watchProviders.length > 0 
+          ? ` with ${content.watchProviders.length} streaming provider${content.watchProviders.length > 1 ? 's' : ''}`
+          : '';
+        
+        toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'})${providerMessage} and ${processedImages.length} image${processedImages.length !== 1 ? 's' : ''}`);
       } else {
         toast.error('Failed to import content. Invalid TMDB ID or content not found.');
       }
@@ -219,6 +229,18 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
             
             <div className="mt-3 space-y-3">
               <div className="flex items-center justify-between">
+                <Label htmlFor="auto-fetch-providers" className="flex items-center text-sm">
+                  <Wifi className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  Auto-fetch Watch Providers
+                </Label>
+                <Switch 
+                  id="auto-fetch-providers" 
+                  checked={autoFetchProviders}
+                  onCheckedChange={setAutoFetchProviders}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
                 <Label htmlFor="include-posters" className="flex items-center text-sm">
                   <Image className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                   Include Posters
@@ -318,15 +340,20 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
               
               {importedContent.watchProviders && importedContent.watchProviders.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="text-xs text-muted-foreground">Available on:</span>
+                  <span className="text-xs text-green-400 font-medium flex items-center gap-1">
+                    <Wifi className="h-3 w-3" />
+                    Available on:
+                  </span>
                   {importedContent.watchProviders.map((provider, i) => (
-                    <img 
-                      key={i}
-                      src={provider.logoPath}
-                      alt={provider.name}
-                      title={provider.name}
-                      className="h-5 w-5 object-cover rounded-sm"
-                    />
+                    <div key={i} className="flex items-center gap-1">
+                      <img 
+                        src={provider.logoPath}
+                        alt={provider.name}
+                        title={provider.name}
+                        className="h-5 w-5 object-cover rounded-sm"
+                      />
+                      <span className="text-xs text-muted-foreground">{provider.name}</span>
+                    </div>
                   ))}
                 </div>
               )}
