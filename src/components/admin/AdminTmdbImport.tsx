@@ -33,6 +33,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
 
     setIsLoading(true);
     try {
+      console.log(`Importing ${contentType} with ID: ${tmdbId.trim()}`);
       const content = await importFromTmdb(tmdbId.trim(), contentType);
       
       if (content) {
@@ -41,7 +42,6 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         
         // Ensure images is an array before filtering
         if (content.images && Array.isArray(content.images)) {
-          // Make a deep copy to avoid reference issues
           processedImages = content.images
             .filter(img => img && typeof img === 'object' && img.path && img.type)
             .map(img => ({ 
@@ -90,17 +90,38 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         
         setImportedContent(content);
         
+        // Enhanced success message
         const providerMessage = content.watchProviders && content.watchProviders.length > 0 
           ? ` with ${content.watchProviders.length} streaming provider${content.watchProviders.length > 1 ? 's' : ''}`
           : '';
         
-        toast.success(`Successfully imported "${content.title}" (${content.type === 'movie' ? 'Movie' : 'TV Show'})${providerMessage} and ${processedImages.length} image${processedImages.length !== 1 ? 's' : ''}`);
+        const imageMessage = processedImages.length > 0 
+          ? ` and ${processedImages.length} image${processedImages.length !== 1 ? 's' : ''}`
+          : '';
+        
+        // Check if this is real TMDB data or mock data
+        const isRealData = !content.title.includes('Sample');
+        const dataSource = isRealData ? 'TMDB' : 'mock data (TMDB API unavailable)';
+        
+        toast.success(`Successfully imported "${content.title}" from ${dataSource} (${content.type === 'movie' ? 'Movie' : 'TV Show'})${providerMessage}${imageMessage}`);
       } else {
         toast.error('Failed to import content. Invalid TMDB ID or content not found.');
       }
     } catch (error) {
       console.error('Import error:', error);
-      toast.error(error instanceof Error ? error.message : 'An error occurred during import');
+      
+      // Enhanced error handling
+      if (error instanceof Error) {
+        if (error.message.includes('TMDB API error')) {
+          toast.error('TMDB API error. Please check your API key configuration or try again later.');
+        } else if (error.message.includes('not found')) {
+          toast.error(`Content with ID "${tmdbId.trim()}" not found on TMDB. Please verify the ID.`);
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        toast.error('An unexpected error occurred during import');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -137,14 +158,25 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         type: img.type === 'poster' ? 'poster' : 'backdrop'
       }));
       
-      console.log("Saving content with images:", contentToSave.images.length, contentToSave.images);
-      console.log("Saving content with watch providers:", contentToSave.watchProviders?.length, contentToSave.watchProviders);
+      // Ensure watch providers are properly structured
+      if (!contentToSave.watchProviders || !Array.isArray(contentToSave.watchProviders)) {
+        contentToSave.watchProviders = [];
+      }
+      
+      console.log("Saving content with images:", contentToSave.images.length);
+      console.log("Saving content with watch providers:", contentToSave.watchProviders.length, contentToSave.watchProviders);
       
       const savedContent = await addContent(contentToSave);
       onImport(savedContent);
       setTmdbId('');
       setImportedContent(null);
-      toast.success(`"${savedContent.title}" successfully added to library with ${savedContent.watchProviders?.length || 0} streaming providers`);
+      
+      const providerCount = savedContent.watchProviders?.length || 0;
+      const imageCount = savedContent.images?.length || 0;
+      
+      toast.success(
+        `"${savedContent.title}" successfully added to library with ${providerCount} streaming provider${providerCount !== 1 ? 's' : ''} and ${imageCount} image${imageCount !== 1 ? 's' : ''}`
+      );
     } catch (error) {
       console.error('Error adding imported content:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to save content to library');
@@ -170,6 +202,16 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       
       {!importedContent ? (
         <div className="space-y-4">
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+            <p className="text-blue-800 dark:text-blue-200 text-sm">
+              <strong>Real TMDB Integration:</strong> This system can fetch actual movie and TV show data from The Movie Database API.
+              <br />
+              <span className="text-xs opacity-80">
+                For full functionality, configure your TMDB API key. Currently using fallback mock data when API is unavailable.
+              </span>
+            </p>
+          </div>
+          
           <p className="text-muted-foreground text-sm">
             Enter a TMDB ID to import content details directly from The Movie Database API.
             <br />
