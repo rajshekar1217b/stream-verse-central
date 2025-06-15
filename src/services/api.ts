@@ -410,7 +410,13 @@ export const searchContent = async (query: string): Promise<Content[]> => {
   }
 };
 
-// Improved TMDB import with better error handling and real API support
+// TMDB API configuration
+const TMDB_API_KEY = 'YOUR_TMDB_API_KEY_HERE'; // Replace with actual API key
+const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
+
+// Enhanced TMDB import with real API integration
 export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<Content | null> => {
   try {
     if (!id || !id.trim()) {
@@ -423,137 +429,124 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
 
     console.log(`Importing ${type} with ID ${id} from TMDB`);
     
-    // Check if we have a real TMDB API key configured
-    const TMDB_API_KEY = process.env.TMDB_API_KEY || localStorage.getItem('tmdb_api_key');
-    const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-    const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
-    const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
-    
-    let realApiData = null;
-    
-    // Try real TMDB API if we have a key
-    if (TMDB_API_KEY && TMDB_API_KEY !== '9a6a1c8d6c8e4f7b9a1c8d6c8e4f7b9a') {
-      try {
-        console.log('Attempting real TMDB API call...');
-        const detailsResponse = await fetch(
-          `${TMDB_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,images,watch/providers`
-        );
-        
-        if (detailsResponse.ok) {
-          realApiData = await detailsResponse.json();
-          console.log('Successfully fetched from TMDB API');
-        } else {
-          console.log('TMDB API call failed, status:', detailsResponse.status);
-        }
-      } catch (apiError) {
-        console.log('TMDB API call error:', apiError);
-      }
-    }
-    
-    // Use real data if available, otherwise fall back to enhanced mock data
-    if (realApiData && !realApiData.success === false) {
-      // Process real TMDB data
-      const genres = realApiData.genres?.map((g: any) => g.name) || [];
-      
-      const cast: CastMember[] = realApiData.credits?.cast?.slice(0, 10).map((person: any) => ({
-        id: person.id.toString(),
-        name: person.name,
-        character: person.character,
-        profilePath: person.profile_path ? `${IMAGE_BASE_URL}${person.profile_path}` : undefined
-      })) || [];
-      
-      const images: { path: string; type: 'poster' | 'backdrop' }[] = [];
-      
-      if (realApiData.poster_path) {
-        images.push({
-          path: `${IMAGE_BASE_URL}${realApiData.poster_path}`,
-          type: 'poster'
-        });
-      }
-      
-      if (realApiData.backdrop_path) {
-        images.push({
-          path: `${BACKDROP_BASE_URL}${realApiData.backdrop_path}`,
-          type: 'backdrop'
-        });
-      }
-      
-      // Process watch providers
-      const watchProviders: WatchProvider[] = [];
-      const providers = realApiData['watch/providers']?.results?.US;
-      
-      if (providers?.flatrate) {
-        providers.flatrate.forEach((provider: any, index: number) => {
-          watchProviders.push({
-            id: provider.provider_id.toString(),
-            name: provider.provider_name,
-            logoPath: `${IMAGE_BASE_URL}${provider.logo_path}`,
-            url: `https://www.${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`,
-            redirectLink: generateDeepLink(provider.provider_name, id, type)
-          });
-        });
-      }
-      
-      const trailer = realApiData.videos?.results?.find((video: any) => 
-        video.type === 'Trailer' && video.site === 'YouTube'
+    // Try real TMDB API call
+    try {
+      const detailsResponse = await fetch(
+        `${TMDB_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,images,watch/providers`
       );
-      const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : undefined;
       
-      const seasons: Season[] = [];
-      if (type === 'tv' && realApiData.seasons) {
-        realApiData.seasons.forEach((season: any) => {
-          if (season.season_number > 0) {
-            seasons.push({
-              id: `${id}-s${season.season_number}`,
-              name: season.name,
-              seasonNumber: season.season_number,
-              episodeCount: season.episode_count,
-              posterPath: season.poster_path ? `${IMAGE_BASE_URL}${season.poster_path}` : undefined,
-              airDate: season.air_date,
-              overview: season.overview,
-              episodes: []
+      if (detailsResponse.ok) {
+        const realApiData = await detailsResponse.json();
+        
+        if (realApiData && !realApiData.success === false) {
+          console.log('Successfully fetched from real TMDB API');
+          
+          // Process real TMDB data
+          const genres = realApiData.genres?.map((g: any) => g.name) || [];
+          
+          const cast: CastMember[] = realApiData.credits?.cast?.slice(0, 10).map((person: any) => ({
+            id: person.id.toString(),
+            name: person.name,
+            character: person.character,
+            profilePath: person.profile_path ? `${IMAGE_BASE_URL}${person.profile_path}` : undefined
+          })) || [];
+          
+          const images: { path: string; type: 'poster' | 'backdrop' }[] = [];
+          
+          if (realApiData.poster_path) {
+            images.push({
+              path: `${IMAGE_BASE_URL}${realApiData.poster_path}`,
+              type: 'poster'
             });
           }
-        });
+          
+          if (realApiData.backdrop_path) {
+            images.push({
+              path: `${BACKDROP_BASE_URL}${realApiData.backdrop_path}`,
+              type: 'backdrop'
+            });
+          }
+          
+          // Process watch providers
+          const watchProviders: WatchProvider[] = [];
+          const providers = realApiData['watch/providers']?.results?.US;
+          
+          if (providers?.flatrate) {
+            providers.flatrate.forEach((provider: any) => {
+              watchProviders.push({
+                id: provider.provider_id.toString(),
+                name: provider.provider_name,
+                logoPath: `${IMAGE_BASE_URL}${provider.logo_path}`,
+                url: `https://www.${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`,
+                redirectLink: generateDeepLink(provider.provider_name, id, type)
+              });
+            });
+          }
+          
+          const trailer = realApiData.videos?.results?.find((video: any) => 
+            video.type === 'Trailer' && video.site === 'YouTube'
+          );
+          const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : undefined;
+          
+          const seasons: Season[] = [];
+          if (type === 'tv' && realApiData.seasons) {
+            realApiData.seasons.forEach((season: any) => {
+              if (season.season_number > 0) {
+                seasons.push({
+                  id: `${id}-s${season.season_number}`,
+                  name: season.name,
+                  seasonNumber: season.season_number,
+                  episodeCount: season.episode_count,
+                  posterPath: season.poster_path ? `${IMAGE_BASE_URL}${season.poster_path}` : undefined,
+                  airDate: season.air_date,
+                  overview: season.overview,
+                  episodes: []
+                });
+              }
+            });
+          }
+          
+          const releaseDate = type === 'movie' ? realApiData.release_date : realApiData.first_air_date;
+          
+          let duration: string | undefined;
+          if (type === 'movie' && realApiData.runtime) {
+            const hours = Math.floor(realApiData.runtime / 60);
+            const minutes = realApiData.runtime % 60;
+            duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+          }
+          
+          const content: Content = {
+            id: `tmdb-${id}-${type}`,
+            title: type === 'movie' ? realApiData.title : realApiData.name,
+            overview: realApiData.overview || 'No overview available.',
+            posterPath: realApiData.poster_path ? `${IMAGE_BASE_URL}${realApiData.poster_path}` : '',
+            backdropPath: realApiData.backdrop_path ? `${BACKDROP_BASE_URL}${realApiData.backdrop_path}` : undefined,
+            releaseDate: releaseDate,
+            type: type,
+            genres: genres,
+            rating: Number(realApiData.vote_average) || 0,
+            duration: duration,
+            status: realApiData.status || 'Released',
+            trailerUrl: trailerUrl,
+            watchProviders: watchProviders,
+            seasons: seasons,
+            cast: cast,
+            embedVideos: trailer ? [{
+              url: trailerUrl!,
+              title: 'Official Trailer'
+            }] : [],
+            images: images
+          };
+          
+          console.log(`Successfully imported real data for "${content.title}" with ${watchProviders.length} watch providers`);
+          return content;
+        }
       }
-      
-      const releaseDate = type === 'movie' ? realApiData.release_date : realApiData.first_air_date;
-      
-      let duration: string | undefined;
-      if (type === 'movie' && realApiData.runtime) {
-        const hours = Math.floor(realApiData.runtime / 60);
-        const minutes = realApiData.runtime % 60;
-        duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-      }
-      
-      const content: Content = {
-        id: `tmdb-${id}-${type}`,
-        title: type === 'movie' ? realApiData.title : realApiData.name,
-        overview: realApiData.overview || 'No overview available.',
-        posterPath: realApiData.poster_path ? `${IMAGE_BASE_URL}${realApiData.poster_path}` : '',
-        backdropPath: realApiData.backdrop_path ? `${BACKDROP_BASE_URL}${realApiData.backdrop_path}` : undefined,
-        releaseDate: releaseDate,
-        type: type,
-        genres: genres,
-        rating: Number(realApiData.vote_average) || 0,
-        duration: duration,
-        status: realApiData.status || 'Released',
-        trailerUrl: trailerUrl,
-        watchProviders: watchProviders,
-        seasons: seasons,
-        cast: cast,
-        embedVideos: trailer ? [{
-          url: trailerUrl!,
-          title: 'Official Trailer'
-        }] : [],
-        images: images
-      };
-      
-      console.log(`Successfully imported real data for "${content.title}" with ${watchProviders.length} watch providers`);
-      return content;
+    } catch (apiError) {
+      console.log('TMDB API call failed:', apiError);
     }
     
-    // Fallback to enhanced mock data
+    // Fallback to enhanced mock data only if real API fails
     console.log('Using enhanced mock data for TMDB import');
     
     const mockContents: Record<string, Partial<Content>> = {
@@ -580,6 +573,14 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
         genres: ['Drama', 'Fantasy', 'Action & Adventure'],
         releaseDate: '2011-04-17',
         duration: undefined
+      },
+      '2734': {
+        title: 'The Matrix Reloaded',
+        overview: 'Neo and his allies race against time before the machines discover the city of Zion and destroy it.',
+        rating: 7.2,
+        genres: ['Action', 'Science Fiction'],
+        releaseDate: '2003-05-15',
+        duration: '2h 18m'
       }
     };
 
@@ -623,8 +624,8 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
     
     const mockContent: Content = {
       id: `tmdb-${id}-${type}`,
-      title: specificContent.title || `Sample ${type === 'movie' ? 'Movie' : 'TV Show'} ${id}`,
-      overview: specificContent.overview || `This is enhanced mock data for ${type} with ID ${id}. Configure a real TMDB API key for actual content data.`,
+      title: specificContent.title || `Enhanced ${type === 'movie' ? 'Movie' : 'TV Show'} ${id}`,
+      overview: specificContent.overview || `This is enhanced mock data for ${type} with ID ${id}. To get real content data, please configure a valid TMDB API key.`,
       posterPath: `https://image.tmdb.org/t/p/w500/sample-poster-${id}.jpg`,
       backdropPath: `https://image.tmdb.org/t/p/original/sample-backdrop-${id}.jpg`,
       releaseDate: specificContent.releaseDate || new Date().toISOString().split('T')[0],
@@ -648,7 +649,7 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
       cast: [
         {
           id: `cast1-${id}`,
-          name: 'Sample Actor',
+          name: 'Enhanced Actor',
           character: 'Main Character',
           profilePath: `https://image.tmdb.org/t/p/w185/sample-profile-${id}.jpg`
         }
