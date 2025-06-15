@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { importFromTmdb, addContent } from '@/services/api';
 import { Content } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, Check, X, Film, Tv, Image, Settings, Wifi, Key } from 'lucide-react';
+import { Search, Loader2, Check, X, Film, Tv, Image, Settings, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -103,7 +102,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
         const isRealData = !content.title.includes('Sample') && !content.title.includes('Enhanced');
         const dataSource = isRealData ? 'TMDB API' : 'mock data (TMDB API key required for real data)';
         
-        toast.success(`Successfully imported "${content.title}" from ${dataSource} (${content.type === 'movie' ? 'Movie' : 'TV Show'})${providerMessage}${imageMessage}`);
+        toast.success(`Successfully imported "${content.title}" from TMDB (${content.type === 'movie' ? 'Movie' : 'TV Show'})${providerMessage}${imageMessage}`);
       } else {
         toast.error('Failed to import content. Invalid TMDB ID or content not found.');
       }
@@ -112,13 +111,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       
       // Enhanced error handling
       if (error instanceof Error) {
-        if (error.message.includes('TMDB API error')) {
-          toast.error('TMDB API error. Please check your API key configuration or try again later.');
-        } else if (error.message.includes('not found')) {
-          toast.error(`Content with ID "${tmdbId.trim()}" not found on TMDB. Please verify the ID.`);
-        } else {
-          toast.error(error.message);
-        }
+        toast.error(error.message);
       } else {
         toast.error('An unexpected error occurred during import');
       }
@@ -202,28 +195,6 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
       
       {!importedContent ? (
         <div className="space-y-4">
-          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
-            <div className="flex items-start space-x-3">
-              <Key className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div>
-                <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
-                  TMDB API Key Required for Real Content
-                </p>
-                <p className="text-amber-700 dark:text-amber-300 text-xs mt-1">
-                  To import real movie and TV show data, you need to configure your TMDB API key in the code.
-                  <br />
-                  <span className="font-medium">Steps:</span>
-                  <br />
-                  1. Get a free API key from <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" className="underline">TMDB</a>
-                  <br />
-                  2. Replace 'YOUR_TMDB_API_KEY_HERE' in src/services/api.ts with your actual key
-                  <br />
-                  <span className="text-xs opacity-80">Currently using enhanced mock data when real API is unavailable.</span>
-                </p>
-              </div>
-            </div>
-          </div>
-          
           <p className="text-muted-foreground text-sm">
             Enter a TMDB ID to import content details directly from The Movie Database API.
             <br />

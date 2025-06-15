@@ -411,12 +411,12 @@ export const searchContent = async (query: string): Promise<Content[]> => {
 };
 
 // TMDB API configuration
-const TMDB_API_KEY = 'bc7e2dc86a85f194da52360ed092f9cc'; // Your actual TMDB API key
+const TMDB_API_KEY = 'bc7e2dc86a85f194da52360ed092f9cc';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
 
-// Enhanced TMDB import with real API integration
+// Fixed TMDB import with proper API integration
 export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<Content | null> => {
   try {
     if (!id || !id.trim()) {
@@ -427,255 +427,147 @@ export const importFromTmdb = async (id: string, type: 'movie' | 'tv'): Promise<
       throw new Error('Content type must be either "movie" or "tv"');
     }
 
-    console.log(`Importing ${type} with ID ${id} from TMDB`);
+    console.log(`Importing ${type} with ID ${id} from TMDB API`);
     
-    // Try real TMDB API call
-    try {
-      const detailsResponse = await fetch(
-        `${TMDB_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,images,watch/providers`
-      );
-      
-      if (detailsResponse.ok) {
-        const realApiData = await detailsResponse.json();
-        
-        if (realApiData && !realApiData.success === false) {
-          console.log('Successfully fetched from real TMDB API');
-          
-          // Process real TMDB data
-          const genres = realApiData.genres?.map((g: any) => g.name) || [];
-          
-          const cast: CastMember[] = realApiData.credits?.cast?.slice(0, 10).map((person: any) => ({
-            id: person.id.toString(),
-            name: person.name,
-            character: person.character,
-            profilePath: person.profile_path ? `${IMAGE_BASE_URL}${person.profile_path}` : undefined
-          })) || [];
-          
-          const images: { path: string; type: 'poster' | 'backdrop' }[] = [];
-          
-          if (realApiData.poster_path) {
-            images.push({
-              path: `${IMAGE_BASE_URL}${realApiData.poster_path}`,
-              type: 'poster'
-            });
-          }
-          
-          if (realApiData.backdrop_path) {
-            images.push({
-              path: `${BACKDROP_BASE_URL}${realApiData.backdrop_path}`,
-              type: 'backdrop'
-            });
-          }
-          
-          // Process watch providers
-          const watchProviders: WatchProvider[] = [];
-          const providers = realApiData['watch/providers']?.results?.US;
-          
-          if (providers?.flatrate) {
-            providers.flatrate.forEach((provider: any) => {
-              watchProviders.push({
-                id: provider.provider_id.toString(),
-                name: provider.provider_name,
-                logoPath: `${IMAGE_BASE_URL}${provider.logo_path}`,
-                url: `https://www.${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`,
-                redirectLink: generateDeepLink(provider.provider_name, id, type)
-              });
-            });
-          }
-          
-          const trailer = realApiData.videos?.results?.find((video: any) => 
-            video.type === 'Trailer' && video.site === 'YouTube'
-          );
-          const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : undefined;
-          
-          const seasons: Season[] = [];
-          if (type === 'tv' && realApiData.seasons) {
-            realApiData.seasons.forEach((season: any) => {
-              if (season.season_number > 0) {
-                seasons.push({
-                  id: `${id}-s${season.season_number}`,
-                  name: season.name,
-                  seasonNumber: season.season_number,
-                  episodeCount: season.episode_count,
-                  posterPath: season.poster_path ? `${IMAGE_BASE_URL}${season.poster_path}` : undefined,
-                  airDate: season.air_date,
-                  overview: season.overview,
-                  episodes: []
-                });
-              }
-            });
-          }
-          
-          const releaseDate = type === 'movie' ? realApiData.release_date : realApiData.first_air_date;
-          
-          let duration: string | undefined;
-          if (type === 'movie' && realApiData.runtime) {
-            const hours = Math.floor(realApiData.runtime / 60);
-            const minutes = realApiData.runtime % 60;
-            duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-          }
-          
-          const content: Content = {
-            id: `tmdb-${id}-${type}`,
-            title: type === 'movie' ? realApiData.title : realApiData.name,
-            overview: realApiData.overview || 'No overview available.',
-            posterPath: realApiData.poster_path ? `${IMAGE_BASE_URL}${realApiData.poster_path}` : '',
-            backdropPath: realApiData.backdrop_path ? `${BACKDROP_BASE_URL}${realApiData.backdrop_path}` : undefined,
-            releaseDate: releaseDate,
-            type: type,
-            genres: genres,
-            rating: Number(realApiData.vote_average) || 0,
-            duration: duration,
-            status: realApiData.status || 'Released',
-            trailerUrl: trailerUrl,
-            watchProviders: watchProviders,
-            seasons: seasons,
-            cast: cast,
-            embedVideos: trailer ? [{
-              url: trailerUrl!,
-              title: 'Official Trailer'
-            }] : [],
-            images: images
-          };
-          
-          console.log(`Successfully imported real data for "${content.title}" with ${watchProviders.length} watch providers`);
-          return content;
-        }
-      }
-    } catch (apiError) {
-      console.log('TMDB API call failed:', apiError);
+    // Make the TMDB API call
+    const detailsResponse = await fetch(
+      `${TMDB_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,images,watch/providers`
+    );
+    
+    if (!detailsResponse.ok) {
+      throw new Error(`TMDB API error: ${detailsResponse.status} ${detailsResponse.statusText}`);
     }
     
-    // Fallback to enhanced mock data only if real API fails
-    console.log('Using enhanced mock data for TMDB import');
+    const realApiData = await detailsResponse.json();
     
-    const mockContents: Record<string, Partial<Content>> = {
-      '550': {
-        title: 'Fight Club',
-        overview: 'A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression into a shocking new form of therapy.',
-        rating: 8.4,
-        genres: ['Drama', 'Thriller'],
-        releaseDate: '1999-10-15',
-        duration: '2h 19m'
-      },
-      '238': {
-        title: 'The Godfather',
-        overview: 'Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family.',
-        rating: 9.2,
-        genres: ['Crime', 'Drama'],
-        releaseDate: '1972-03-14',
-        duration: '2h 55m'
-      },
-      '1399': {
-        title: 'Game of Thrones',
-        overview: 'Seven noble families fight for control of the mythical land of Westeros.',
-        rating: 9.3,
-        genres: ['Drama', 'Fantasy', 'Action & Adventure'],
-        releaseDate: '2011-04-17',
-        duration: undefined
-      },
-      '2734': {
-        title: 'The Matrix Reloaded',
-        overview: 'Neo and his allies race against time before the machines discover the city of Zion and destroy it.',
-        rating: 7.2,
-        genres: ['Action', 'Science Fiction'],
-        releaseDate: '2003-05-15',
-        duration: '2h 18m'
-      }
-    };
-
-    const allWatchProviders: WatchProvider[] = [
-      {
-        id: 'netflix',
-        name: 'Netflix',
-        logoPath: 'https://image.tmdb.org/t/p/original/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg',
-        url: 'https://www.netflix.com',
-        redirectLink: `netflix://title/${id}`
-      },
-      {
-        id: 'amazon-prime',
-        name: 'Amazon Prime Video',
-        logoPath: 'https://image.tmdb.org/t/p/original/68MNrwlkpF7WnmNPXLah69CR5cb.jpg',
-        url: 'https://www.primevideo.com',
-        redirectLink: `https://app.primevideo.com/detail?gti=${id}`
-      },
-      {
-        id: 'hulu',
-        name: 'Hulu',
-        logoPath: 'https://image.tmdb.org/t/p/original/pqzjCxPVc9TkVgGRWeAoMmyqkZV.jpg',
-        url: 'https://www.hulu.com',
-        redirectLink: `https://www.hulu.com/movie/${id}`
-      },
-      {
-        id: 'disney-plus',
-        name: 'Disney+',
-        logoPath: 'https://image.tmdb.org/t/p/original/7Fl8ylPDclt3ZYgNbW2t7rbZE9I.jpg',
-        url: 'https://www.disneyplus.com',
-        redirectLink: `https://www.disneyplus.com/movies/${id}`
-      }
-    ];
-
-    const numProviders = Math.floor(Math.random() * 3) + 1;
-    const selectedProviders = allWatchProviders
-      .sort(() => Math.random() - 0.5)
-      .slice(0, numProviders);
-
-    const specificContent = mockContents[id] || {};
+    // Check if the API returned an error
+    if (realApiData.success === false) {
+      throw new Error(`TMDB API error: ${realApiData.status_message || 'Unknown error'}`);
+    }
     
-    const mockContent: Content = {
+    // Check if we have valid data
+    if (!realApiData.id) {
+      throw new Error(`No content found with ID ${id}`);
+    }
+    
+    console.log('Successfully fetched from real TMDB API:', realApiData.title || realApiData.name);
+    
+    // Process real TMDB data
+    const genres = realApiData.genres?.map((g: any) => g.name) || [];
+    
+    const cast: CastMember[] = realApiData.credits?.cast?.slice(0, 10).map((person: any) => ({
+      id: person.id.toString(),
+      name: person.name,
+      character: person.character,
+      profilePath: person.profile_path ? `${IMAGE_BASE_URL}${person.profile_path}` : undefined
+    })) || [];
+    
+    const images: { path: string; type: 'poster' | 'backdrop' }[] = [];
+    
+    if (realApiData.poster_path) {
+      images.push({
+        path: `${IMAGE_BASE_URL}${realApiData.poster_path}`,
+        type: 'poster'
+      });
+    }
+    
+    if (realApiData.backdrop_path) {
+      images.push({
+        path: `${BACKDROP_BASE_URL}${realApiData.backdrop_path}`,
+        type: 'backdrop'
+      });
+    }
+    
+    // Process watch providers
+    const watchProviders: WatchProvider[] = [];
+    const providers = realApiData['watch/providers']?.results?.US;
+    
+    if (providers?.flatrate) {
+      providers.flatrate.forEach((provider: any) => {
+        watchProviders.push({
+          id: provider.provider_id.toString(),
+          name: provider.provider_name,
+          logoPath: `${IMAGE_BASE_URL}${provider.logo_path}`,
+          url: `https://www.${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`,
+          redirectLink: generateDeepLink(provider.provider_name, id, type)
+        });
+      });
+    }
+    
+    const trailer = realApiData.videos?.results?.find((video: any) => 
+      video.type === 'Trailer' && video.site === 'YouTube'
+    );
+    const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : undefined;
+    
+    const seasons: Season[] = [];
+    if (type === 'tv' && realApiData.seasons) {
+      realApiData.seasons.forEach((season: any) => {
+        if (season.season_number > 0) {
+          seasons.push({
+            id: `${id}-s${season.season_number}`,
+            name: season.name,
+            seasonNumber: season.season_number,
+            episodeCount: season.episode_count,
+            posterPath: season.poster_path ? `${IMAGE_BASE_URL}${season.poster_path}` : undefined,
+            airDate: season.air_date,
+            overview: season.overview,
+            episodes: []
+          });
+        }
+      });
+    }
+    
+    const releaseDate = type === 'movie' ? realApiData.release_date : realApiData.first_air_date;
+    
+    let duration: string | undefined;
+    if (type === 'movie' && realApiData.runtime) {
+      const hours = Math.floor(realApiData.runtime / 60);
+      const minutes = realApiData.runtime % 60;
+      duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    }
+    
+    const content: Content = {
       id: `tmdb-${id}-${type}`,
-      title: specificContent.title || `Enhanced ${type === 'movie' ? 'Movie' : 'TV Show'} ${id}`,
-      overview: specificContent.overview || `This is enhanced mock data for ${type} with ID ${id}. To get real content data, please configure a valid TMDB API key.`,
-      posterPath: `https://image.tmdb.org/t/p/w500/sample-poster-${id}.jpg`,
-      backdropPath: `https://image.tmdb.org/t/p/original/sample-backdrop-${id}.jpg`,
-      releaseDate: specificContent.releaseDate || new Date().toISOString().split('T')[0],
+      title: type === 'movie' ? realApiData.title : realApiData.name,
+      overview: realApiData.overview || 'No overview available.',
+      posterPath: realApiData.poster_path ? `${IMAGE_BASE_URL}${realApiData.poster_path}` : '',
+      backdropPath: realApiData.backdrop_path ? `${BACKDROP_BASE_URL}${realApiData.backdrop_path}` : undefined,
+      releaseDate: releaseDate,
       type: type,
-      genres: specificContent.genres || ['Drama', 'Action'],
-      rating: specificContent.rating || (7 + Math.random() * 2),
-      duration: type === 'movie' ? (specificContent.duration || `${90 + Math.floor(Math.random() * 60)}m`) : undefined,
-      status: 'Released',
-      trailerUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      watchProviders: selectedProviders,
-      seasons: type === 'tv' ? [
-        {
-          id: `s1-${id}`,
-          name: 'Season 1',
-          seasonNumber: 1,
-          episodeCount: 10,
-          overview: 'First season overview',
-          episodes: []
-        }
-      ] : [],
-      cast: [
-        {
-          id: `cast1-${id}`,
-          name: 'Enhanced Actor',
-          character: 'Main Character',
-          profilePath: `https://image.tmdb.org/t/p/w185/sample-profile-${id}.jpg`
-        }
-      ],
-      embedVideos: [
-        {
-          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          title: 'Official Trailer'
-        }
-      ],
-      images: [
-        {
-          path: `https://image.tmdb.org/t/p/w500/sample-poster-${id}.jpg`,
-          type: 'poster'
-        },
-        {
-          path: `https://image.tmdb.org/t/p/original/sample-backdrop-${id}.jpg`,
-          type: 'backdrop'
-        }
-      ]
+      genres: genres,
+      rating: Number(realApiData.vote_average) || 0,
+      duration: duration,
+      status: realApiData.status || 'Released',
+      trailerUrl: trailerUrl,
+      watchProviders: watchProviders,
+      seasons: seasons,
+      cast: cast,
+      embedVideos: trailer ? [{
+        url: trailerUrl!,
+        title: 'Official Trailer'
+      }] : [],
+      images: images
     };
     
-    return mockContent;
+    console.log(`Successfully imported real data for "${content.title}" with ${watchProviders.length} watch providers and ${images.length} images`);
+    return content;
     
   } catch (error) {
     console.error('Error importing from TMDB:', error);
+    
+    // Provide specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('404')) {
+        throw new Error(`Content with ID "${id}" not found on TMDB. Please verify the ID is correct.`);
+      } else if (error.message.includes('401')) {
+        throw new Error('TMDB API authentication failed. Please check your API key.');
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      } else {
+        throw error;
+      }
+    }
+    
     throw new Error(`Failed to import content from TMDB: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
