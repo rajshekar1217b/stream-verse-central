@@ -411,7 +411,7 @@ export const searchContent = async (query: string): Promise<Content[]> => {
 };
 
 // TMDB API configuration
-const TMDB_API_KEY = 'YOUR_TMDB_API_KEY_HERE'; // Replace with actual API key
+const TMDB_API_KEY = 'bc7e2dc86a85f194da52360ed092f9cc'; // Your actual TMDB API key
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
