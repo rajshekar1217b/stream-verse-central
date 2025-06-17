@@ -32,15 +32,12 @@ const HomePage: React.FC = () => {
         // Get all categories with their contents
         const categoriesData = await getCategories();
         
+        // Create genre-based categories from all content
+        const genreCategories = createGenreCategories(allContentData);
+        
         if (!categoriesData || categoriesData.length === 0) {
-          console.warn('No categories found, creating a default "All Content" category');
-          // If no categories, create a default category with all content
-          const defaultCategory: Category = {
-            id: 'all-content',
-            name: 'All Content',
-            contents: allContentData
-          };
-          setCategories([defaultCategory]);
+          console.warn('No categories found, using genre-based categories');
+          setCategories(genreCategories);
         } else {
           // Add uncategorized content to a separate category
           const categorizedContentIds = new Set();
@@ -69,6 +66,24 @@ const HomePage: React.FC = () => {
             finalCategories.unshift(latestCategory); // Add at the beginning
           }
           
+          // Add top-rated content category
+          const topRatedContent = allContentData
+            .filter(content => content.rating >= 7)
+            .sort((a, b) => b.rating - a.rating)
+            .slice(0, 20);
+          
+          if (topRatedContent.length > 0) {
+            const topRatedCategory: Category = {
+              id: 'top-rated',
+              name: 'Top Rated',
+              contents: topRatedContent
+            };
+            finalCategories.splice(1, 0, topRatedCategory); // Add after latest additions
+          }
+          
+          // Add genre categories after regular categories
+          finalCategories.push(...genreCategories);
+          
           setCategories(finalCategories);
           console.log(`Loaded ${finalCategories.length} categories`);
         }
@@ -95,6 +110,35 @@ const HomePage: React.FC = () => {
     
     fetchData();
   }, []);
+
+  // Helper function to create genre-based categories
+  const createGenreCategories = (content: Content[]): Category[] => {
+    const genreMap = new Map<string, Content[]>();
+    
+    content.forEach(item => {
+      item.genres.forEach(genre => {
+        if (!genreMap.has(genre)) {
+          genreMap.set(genre, []);
+        }
+        genreMap.get(genre)!.push(item);
+      });
+    });
+    
+    // Convert to categories, only include genres with at least 3 items
+    const genreCategories: Category[] = [];
+    genreMap.forEach((contents, genre) => {
+      if (contents.length >= 3) {
+        genreCategories.push({
+          id: `genre-${genre.toLowerCase().replace(/\s+/g, '-')}`,
+          name: `${genre} ${contents.some(c => c.type === 'movie') && contents.some(c => c.type === 'tv') ? 'Collection' : contents[0].type === 'movie' ? 'Movies' : 'Shows'}`,
+          contents: contents.sort((a, b) => b.rating - a.rating) // Sort by rating
+        });
+      }
+    });
+    
+    // Sort genre categories by number of items (most popular first)
+    return genreCategories.sort((a, b) => b.contents.length - a.contents.length);
+  };
   
   if (isLoading) {
     return (

@@ -1,14 +1,20 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { getContentByType } from '@/services/api';
 import { Content } from '@/types';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ContentCard from '@/components/ui/ContentCard';
+import ContentFilter from '@/components/ContentFilter';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 const TVShowsPage: React.FC = () => {
   const [tvShows, setTvShows] = useState<Content[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('title');
 
   useEffect(() => {
     const fetchTVShows = async () => {
@@ -26,12 +32,103 @@ const TVShowsPage: React.FC = () => {
     fetchTVShows();
   }, []);
 
+  // Extract unique genres from all TV shows
+  const allGenres = useMemo(() => {
+    const genreSet = new Set<string>();
+    tvShows.forEach(show => {
+      show.genres.forEach(genre => genreSet.add(genre));
+    });
+    return Array.from(genreSet).sort();
+  }, [tvShows]);
+
+  // Filter and sort TV shows
+  const filteredAndSortedTVShows = useMemo(() => {
+    let filtered = tvShows;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(show =>
+        show.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        show.overview.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply genre filter
+    if (selectedGenres.length > 0) {
+      filtered = filtered.filter(show =>
+        selectedGenres.some(genre => show.genres.includes(genre))
+      );
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'title-desc':
+          return b.title.localeCompare(a.title);
+        case 'rating':
+          return b.rating - a.rating;
+        case 'rating-low':
+          return a.rating - b.rating;
+        case 'release-date':
+          return new Date(b.releaseDate || 0).getTime() - new Date(a.releaseDate || 0).getTime();
+        case 'release-date-old':
+          return new Date(a.releaseDate || 0).getTime() - new Date(b.releaseDate || 0).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [tvShows, searchQuery, selectedGenres, sortBy]);
+
+  const handleGenreToggle = (genre: string) => {
+    setSelectedGenres(prev =>
+      prev.includes(genre)
+        ? prev.filter(g => g !== genre)
+        : [...prev, genre]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedGenres([]);
+    setSearchQuery('');
+    setSortBy('title');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <h1 className="text-2xl font-bold mb-6">TV Shows</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">TV Shows</h1>
+          <div className="text-sm text-muted-foreground">
+            {filteredAndSortedTVShows.length} of {tvShows.length} shows
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search TV shows..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Filters */}
+        <ContentFilter
+          genres={allGenres}
+          selectedGenres={selectedGenres}
+          onGenreToggle={handleGenreToggle}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onClearFilters={handleClearFilters}
+        />
 
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -41,17 +138,27 @@ const TVShowsPage: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : tvShows.length > 0 ? (
+        ) : filteredAndSortedTVShows.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {tvShows.map((tvShow) => (
+            {filteredAndSortedTVShows.map((tvShow) => (
               <ContentCard key={tvShow.id} content={tvShow} size="medium" />
             ))}
           </div>
         ) : (
           <div className="text-center py-16">
             <p className="text-xl text-gray-400">
-              No TV shows available
+              {searchQuery || selectedGenres.length > 0
+                ? "No TV shows match your filters"
+                : "No TV shows available"}
             </p>
+            {(searchQuery || selectedGenres.length > 0) && (
+              <button
+                onClick={handleClearFilters}
+                className="mt-4 text-primary hover:underline"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
       </main>
