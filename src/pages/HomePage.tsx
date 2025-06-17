@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { getCategories } from '@/services/api';
+import { getCategories, getAllContent } from '@/services/api';
 import { Content, Category } from '@/types';
 import ContentCarousel from '@/components/ContentCarousel';
 import FeaturedBanner from '@/components/FeaturedBanner';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 
 const HomePage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allContent, setAllContent] = useState<Content[]>([]);
   const [featuredContent, setFeaturedContent] = useState<Content | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,34 +24,59 @@ const HomePage: React.FC = () => {
         
         console.log('Fetching homepage data...');
         
+        // Get all content first
+        const allContentData = await getAllContent();
+        console.log(`Loaded ${allContentData.length} total content items`);
+        setAllContent(allContentData);
+        
         // Get all categories with their contents
         const categoriesData = await getCategories();
         
         if (!categoriesData || categoriesData.length === 0) {
-          console.warn('No categories found');
-          setCategories([]);
-          setFeaturedContent(null);
-          return;
+          console.warn('No categories found, creating a default "All Content" category');
+          // If no categories, create a default category with all content
+          const defaultCategory: Category = {
+            id: 'all-content',
+            name: 'All Content',
+            contents: allContentData
+          };
+          setCategories([defaultCategory]);
+        } else {
+          // Add uncategorized content to a separate category
+          const categorizedContentIds = new Set();
+          categoriesData.forEach(category => {
+            if (category.contents) {
+              category.contents.forEach(content => {
+                categorizedContentIds.add(content.id);
+              });
+            }
+          });
+          
+          const uncategorizedContent = allContentData.filter(content => 
+            !categorizedContentIds.has(content.id)
+          );
+          
+          let finalCategories = [...categoriesData];
+          
+          // If there's uncategorized content, add it to a "Latest Additions" category
+          if (uncategorizedContent.length > 0) {
+            console.log(`Found ${uncategorizedContent.length} uncategorized content items`);
+            const latestCategory: Category = {
+              id: 'latest-additions',
+              name: 'Latest Additions',
+              contents: uncategorizedContent
+            };
+            finalCategories.unshift(latestCategory); // Add at the beginning
+          }
+          
+          setCategories(finalCategories);
+          console.log(`Loaded ${finalCategories.length} categories`);
         }
         
-        setCategories(categoriesData);
-        console.log(`Loaded ${categoriesData.length} categories`);
-        
-        // Select a random content for the featured banner
-        const allContent: Content[] = [];
-        categoriesData.forEach(category => {
-          if (category.contents && Array.isArray(category.contents)) {
-            category.contents.forEach(content => {
-              if (content && !allContent.some(c => c.id === content.id)) {
-                allContent.push(content);
-              }
-            });
-          }
-        });
-        
-        if (allContent.length > 0) {
-          const randomIndex = Math.floor(Math.random() * allContent.length);
-          const selectedContent = allContent[randomIndex];
+        // Select a random content for the featured banner from all available content
+        if (allContentData.length > 0) {
+          const randomIndex = Math.floor(Math.random() * allContentData.length);
+          const selectedContent = allContentData[randomIndex];
           setFeaturedContent(selectedContent);
           console.log('Featured content selected:', selectedContent.title);
         } else {
@@ -129,7 +155,7 @@ const HomePage: React.FC = () => {
             })
           ) : (
             <div className="py-12 text-center">
-              <p className="text-muted-foreground">No categories found. Add some content to get started!</p>
+              <p className="text-muted-foreground">No content found. Add some content to get started!</p>
             </div>
           )}
         </div>

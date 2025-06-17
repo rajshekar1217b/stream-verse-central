@@ -16,11 +16,14 @@ import CommentsSection from '@/components/CommentsSection';
 import EmbeddedVideos from '@/components/EmbeddedVideos';
 import { toast } from 'sonner';
 import { supabase } from '@/types/supabase-extensions';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const ContentDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [content, setContent] = useState<Content | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -49,78 +52,84 @@ const ContentDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!id) {
+      console.error('No content ID provided');
       navigate('/');
       return;
     }
 
     const fetchContent = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+        
+        console.log('Fetching content with ID:', id);
         const contentData = await getContentById(id);
+        
         if (contentData) {
-          console.log("Content data loaded:", contentData);
+          console.log("Content data loaded successfully:", contentData.title);
           
-          // Initialize images array if it doesn't exist or is malformed
-          let processedImages = [];
-          
-          // Check if images exists and is a proper array 
-          if (contentData.images && Array.isArray(contentData.images)) {
-            // Filter out any invalid image objects
-            processedImages = contentData.images
-              .filter(img => img && typeof img === 'object' && img.path && img.type)
-              .map(img => ({
-                path: img.path,
-                type: img.type === 'poster' ? 'poster' : 'backdrop'
-              }));
-              
-            console.log("Found", processedImages.length, "valid images in content data");
-          } else if (contentData.images && typeof contentData.images === 'object' && 
-                    typeof contentData.images === 'object' && 
-                    'value' in contentData.images && 
-                    '_type' in contentData.images) {
-            // Handle the case where images comes as {_type: 'undefined', value: 'undefined'}
-            console.log("Images property is malformed:", contentData.images);
-            processedImages = [];
-          } else {
-            console.log("No images array found or improperly formatted, creating from poster and backdrop");
-            processedImages = [];
+          // Ensure all arrays are properly initialized
+          if (!contentData.images || !Array.isArray(contentData.images)) {
+            contentData.images = [];
+            
+            // Add poster and backdrop to images if they exist
+            if (contentData.posterPath) {
+              contentData.images.push({
+                path: contentData.posterPath,
+                type: 'poster'
+              });
+            }
+            if (contentData.backdropPath) {
+              contentData.images.push({
+                path: contentData.backdropPath,
+                type: 'backdrop'
+              });
+            }
           }
           
-          // Always make sure poster and backdrop are included in images if they exist
-          if (contentData.posterPath && !processedImages.some(img => img.path === contentData.posterPath)) {
-            processedImages.push({
-              path: contentData.posterPath,
-              type: 'poster'
-            });
-          }
-          
-          if (contentData.backdropPath && !processedImages.some(img => img.path === contentData.backdropPath)) {
-            processedImages.push({
-              path: contentData.backdropPath,
-              type: 'backdrop'
-            });
-          }
-          
-          // Update the content with processed images
-          contentData.images = processedImages;
-          console.log("Final processed images:", processedImages.length);
-          
-          // Log embedded videos data for debugging
-          if (contentData.embedVideos && Array.isArray(contentData.embedVideos)) {
-            console.log("Found", contentData.embedVideos.length, "embedded videos:", contentData.embedVideos);
-          } else {
-            console.log("No embedded videos found or not in correct format");
+          if (!contentData.embedVideos || !Array.isArray(contentData.embedVideos)) {
             contentData.embedVideos = [];
+            
+            // If there's a trailer URL, add it to embed videos
+            if (contentData.trailerUrl) {
+              contentData.embedVideos.push({
+                url: contentData.trailerUrl,
+                title: 'Official Trailer'
+              });
+            }
           }
+          
+          if (!contentData.watchProviders || !Array.isArray(contentData.watchProviders)) {
+            contentData.watchProviders = [];
+          }
+          
+          if (!contentData.cast || !Array.isArray(contentData.cast)) {
+            contentData.cast = [];
+          }
+          
+          if (!contentData.seasons || !Array.isArray(contentData.seasons)) {
+            contentData.seasons = [];
+          }
+          
+          console.log("Final processed content:", {
+            title: contentData.title,
+            images: contentData.images?.length || 0,
+            embedVideos: contentData.embedVideos?.length || 0,
+            watchProviders: contentData.watchProviders?.length || 0,
+            cast: contentData.cast?.length || 0
+          });
           
           setContent(contentData);
         } else {
+          console.warn("No content found for ID:", id);
+          setError("Content not found");
           toast.error("Content not found");
-          navigate('/not-found');
         }
       } catch (error) {
         console.error('Error fetching content:', error);
-        toast.error("Failed to load content");
-        navigate('/not-found');
+        const errorMessage = error instanceof Error ? error.message : "Failed to load content";
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -132,16 +141,33 @@ const ContentDetailPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="h-8 w-36 bg-muted rounded mb-4"></div>
-          <div className="h-4 w-48 bg-muted rounded"></div>
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading content...</p>
         </div>
       </div>
     );
   }
 
-  if (!content) {
-    return null;
+  if (error || !content) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 pt-24 pb-16">
+          <div className="text-center py-16">
+            <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Content Not Found</h1>
+            <p className="text-muted-foreground mb-6">
+              {error || "The content you're looking for doesn't exist."}
+            </p>
+            <Button onClick={() => navigate('/')}>
+              Go Back Home
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -179,16 +205,7 @@ const ContentDetailPage: React.FC = () => {
               
               {/* Watch Providers */}
               <div className="mt-6">
-                {content?.watchProviders && content.watchProviders.length > 0 ? (
-                  <WatchProviders providers={content.watchProviders} />
-                ) : (
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Where to Watch</h3>
-                    <p className="text-muted-foreground text-sm">
-                      No streaming options available at this time.
-                    </p>
-                  </div>
-                )}
+                <WatchProviders providers={content?.watchProviders || []} />
               </div>
             </div>
 
@@ -201,7 +218,7 @@ const ContentDetailPage: React.FC = () => {
                 <EmbeddedVideos videos={content.embedVideos} />
               )}
 
-              {/* Image Gallery - with debug info */}
+              {/* Image Gallery */}
               {content?.images && content.images.length > 0 && (
                 <ImageGallery images={content.images} />
               )}

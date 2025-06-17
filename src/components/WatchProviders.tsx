@@ -11,14 +11,6 @@ interface WatchProvidersProps {
 }
 
 const WatchProviders: React.FC<WatchProvidersProps> = ({ providers }) => {
-  if (!providers || providers.length === 0) {
-    return (
-      <div className="text-muted-foreground text-sm mt-2">
-        No streaming options available at this time.
-      </div>
-    );
-  }
-
   // Handle opening the app if available, otherwise open the web URL
   const handleProviderClick = (provider: WatchProvider) => {
     console.log("Opening provider:", provider);
@@ -46,38 +38,49 @@ const WatchProviders: React.FC<WatchProvidersProps> = ({ providers }) => {
   return (
     <div>
       <h3 className="text-lg font-medium mb-3">Where to Watch</h3>
-      <div className="flex flex-wrap gap-3">
-        {providers.map((provider) => (
-          <TooltipProvider key={provider.id}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  onClick={() => handleProviderClick(provider)}
-                  className="flex items-center gap-2 hover:bg-accent/10 transition-colors group"
-                >
-                  <img
-                    src={provider.logoPath}
-                    alt={provider.name}
-                    className="w-6 h-6 rounded"
-                  />
-                  <span>{provider.name}</span>
-                  {provider.redirectLink ? (
-                    <Smartphone size={14} className="text-muted-foreground group-hover:text-foreground" />
-                  ) : (
-                    <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {provider.redirectLink 
-                  ? `Open in ${provider.name} app` 
-                  : `Watch on ${provider.name} website`}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ))}
-      </div>
+      {!providers || providers.length === 0 ? (
+        <div className="text-muted-foreground text-sm">
+          No streaming options available at this time.
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {providers.map((provider) => (
+            <TooltipProvider key={provider.id}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleProviderClick(provider)}
+                    className="flex items-center gap-2 hover:bg-accent/10 transition-colors group"
+                  >
+                    <img
+                      src={provider.logoPath}
+                      alt={provider.name}
+                      className="w-6 h-6 rounded"
+                      onError={(e) => {
+                        // Fallback for broken images
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <span>{provider.name}</span>
+                    {provider.redirectLink ? (
+                      <Smartphone size={14} className="text-muted-foreground group-hover:text-foreground" />
+                    ) : (
+                      <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {provider.redirectLink 
+                    ? `Open in ${provider.name} app` 
+                    : `Watch on ${provider.name} website`}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
