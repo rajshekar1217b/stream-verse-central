@@ -54,32 +54,32 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents }) =>
   }
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">{title}</h2>
+    <div className="mb-12">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-white glow-text">{title}</h2>
         
-        {/* Sort Dropdown */}
+        {/* Sort Dropdown with Web3 styling */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button className="web3-button gap-2">
               <Filter className="h-4 w-4" />
               Sort
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSortBy('default')}>
+          <DropdownMenuContent align="end" className="glass-card border-white/20">
+            <DropdownMenuItem onClick={() => setSortBy('default')} className="text-white/90 hover:bg-white/10">
               Default Order
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('rating')}>
+            <DropdownMenuItem onClick={() => setSortBy('rating')} className="text-white/90 hover:bg-white/10">
               Highest Rated
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('title')}>
+            <DropdownMenuItem onClick={() => setSortBy('title')} className="text-white/90 hover:bg-white/10">
               A-Z
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('newest')}>
+            <DropdownMenuItem onClick={() => setSortBy('newest')} className="text-white/90 hover:bg-white/10">
               Newest First
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortBy('oldest')}>
+            <DropdownMenuItem onClick={() => setSortBy('oldest')} className="text-white/90 hover:bg-white/10">
               Oldest First
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -100,7 +100,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents }) =>
         
         <button 
           onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute left-4 top-1/2 -translate-y-1/2 backdrop-blur-xl bg-black/30 hover:bg-black/50 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 border border-white/20"
           aria-label="Scroll left"
         >
           <ChevronLeft className="text-white h-6 w-6" />
@@ -108,7 +108,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents }) =>
         
         <button 
           onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute right-4 top-1/2 -translate-y-1/2 backdrop-blur-xl bg-black/30 hover:bg-black/50 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 border border-white/20"
           aria-label="Scroll right"
         >
           <ChevronRight className="text-white h-6 w-6" />
