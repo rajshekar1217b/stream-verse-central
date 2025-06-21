@@ -26,20 +26,61 @@ const LaunchScreen: React.FC<LaunchScreenProps> = ({ onComplete }) => {
   return (
     <div className="fixed inset-0 bg-black z-50 flex items-center justify-center transition-opacity duration-500">
       <div className="text-center relative">
-        {/* Netflix-style logo with curved text */}
+        {/* Netflix-style logo with individually wrapped letters */}
         <div className="relative inline-block">
-          <div className="text-6xl md:text-8xl font-bold text-red-600 tracking-wider animate-pulse transform">
-            <div className="flex flex-col items-center">
-              <div className="transform -rotate-12 origin-center mb-2">
-                WHERE
-              </div>
-              <div className="text-4xl md:text-5xl transform scale-110 z-10 relative -my-4">
-                TO
-              </div>
-              <div className="transform rotate-12 origin-center mt-2">
-                WATCH
-              </div>
+          <div className="text-6xl md:text-8xl font-bold text-red-600 tracking-wider">
+            
+            {/* WHERE - top row */}
+            <div className="flex justify-center items-center mb-4 transform -rotate-12 origin-center">
+              {['W', 'H', 'E', 'R', 'E'].map((letter, index) => (
+                <span
+                  key={`where-${index}`}
+                  className="inline-block animate-pulse transform hover:scale-110 transition-transform duration-300"
+                  style={{
+                    animationDelay: `${index * 0.1}s`,
+                    textShadow: '0 0 20px rgba(229, 9, 20, 0.5), 0 0 40px rgba(229, 9, 20, 0.3)',
+                    transform: `perspective(1000px) rotateY(${index % 2 === 0 ? '15deg' : '-15deg'}) rotateX(${index % 3 === 0 ? '10deg' : '-10deg'})`
+                  }}
+                >
+                  {letter}
+                </span>
+              ))}
             </div>
+
+            {/* TO - middle row (smaller, centered) */}
+            <div className="flex justify-center items-center mb-4 relative z-10">
+              {['T', 'O'].map((letter, index) => (
+                <span
+                  key={`to-${index}`}
+                  className="inline-block text-4xl md:text-5xl animate-pulse transform hover:scale-110 transition-transform duration-300"
+                  style={{
+                    animationDelay: `${(index + 5) * 0.1}s`,
+                    textShadow: '0 0 20px rgba(229, 9, 20, 0.5), 0 0 40px rgba(229, 9, 20, 0.3)',
+                    transform: `perspective(1000px) rotateY(${index % 2 === 0 ? '-20deg' : '20deg'}) rotateX(${index % 2 === 0 ? '-15deg' : '15deg'})`
+                  }}
+                >
+                  {letter}
+                </span>
+              ))}
+            </div>
+
+            {/* WATCH - bottom row */}
+            <div className="flex justify-center items-center transform rotate-12 origin-center">
+              {['W', 'A', 'T', 'C', 'H'].map((letter, index) => (
+                <span
+                  key={`watch-${index}`}
+                  className="inline-block animate-pulse transform hover:scale-110 transition-transform duration-300"
+                  style={{
+                    animationDelay: `${(index + 7) * 0.1}s`,
+                    textShadow: '0 0 20px rgba(229, 9, 20, 0.5), 0 0 40px rgba(229, 9, 20, 0.3)',
+                    transform: `perspective(1000px) rotateY(${index % 2 === 0 ? '15deg' : '-15deg'}) rotateX(${index % 3 === 0 ? '-10deg' : '10deg'})`
+                  }}
+                >
+                  {letter}
+                </span>
+              ))}
+            </div>
+
           </div>
         </div>
         
