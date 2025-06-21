@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Content, WatchProvider } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
   useEffect(() => {
     if (initialContent) {
       console.log('Initializing form with content:', initialContent);
+      console.log('Watch providers from initial content:', initialContent.watchProviders);
       setFormData({
         id: initialContent.id,
         title: initialContent.title,
@@ -132,9 +134,14 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
           ...provider,
           redirectLink: providerRedirectLink || provider.redirectLink || '',
         };
+        
+        console.log('Adding new provider:', newProvider);
+        const updatedProviders = [...(formData.watchProviders || []), newProvider];
+        console.log('Updated providers list:', updatedProviders);
+        
         setFormData({
           ...formData,
-          watchProviders: [...(formData.watchProviders || []), newProvider],
+          watchProviders: updatedProviders,
         });
       }
       setSelectedProvider('');
@@ -143,18 +150,25 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
   };
 
   const handleRemoveProvider = (providerId: string) => {
+    console.log('Removing provider with ID:', providerId);
+    const updatedProviders = formData.watchProviders?.filter(p => p.id !== providerId) || [];
+    console.log('Updated providers after removal:', updatedProviders);
+    
     setFormData({
       ...formData,
-      watchProviders: formData.watchProviders?.filter(p => p.id !== providerId),
+      watchProviders: updatedProviders,
     });
   };
 
   const handleUpdateProviderRedirectLink = (providerId: string, redirectLink: string) => {
+    console.log('Updating redirect link for provider:', providerId, 'to:', redirectLink);
+    const updatedProviders = formData.watchProviders?.map(p => 
+      p.id === providerId ? { ...p, redirectLink } : p
+    ) || [];
+    
     setFormData({
       ...formData,
-      watchProviders: formData.watchProviders?.map(p => 
-        p.id === providerId ? { ...p, redirectLink } : p
-      ),
+      watchProviders: updatedProviders,
     });
   };
 
@@ -215,7 +229,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
       return;
     }
     
-    // Prepare content for saving
+    // Prepare content for saving with proper watch providers
     const contentToSave = {
       ...formData,
       id: formData.id || Date.now().toString(),
@@ -228,7 +242,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
       watchProviders: formData.watchProviders || []
     } as Content;
     
-    console.log('Submitting content:', contentToSave);
+    console.log('Submitting content with watch providers:', contentToSave.watchProviders);
     onSave(contentToSave);
   };
 
@@ -543,50 +557,64 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({
       {/* Watch Providers */}
       <div className="space-y-3">
         <Label>Watch Providers</Label>
+        
+        {/* Debug info */}
+        <div className="text-xs text-gray-500 mb-2">
+          Current providers count: {formData.watchProviders?.length || 0}
+        </div>
+        
         <div className="flex flex-wrap gap-2">
-          {formData.watchProviders?.map((provider) => (
-            <div 
-              key={provider.id} 
-              className="flex flex-col bg-gray-800 p-3 rounded-lg text-sm w-full"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <img 
-                    src={provider.logoPath} 
-                    alt={provider.name} 
-                    className="w-6 h-6 rounded-full"
-                  />
-                  <span className="font-medium">{provider.name}</span>
+          {formData.watchProviders && formData.watchProviders.length > 0 ? (
+            formData.watchProviders.map((provider) => (
+              <div 
+                key={provider.id} 
+                className="flex flex-col bg-gray-800 p-3 rounded-lg text-sm w-full"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={provider.logoPath} 
+                      alt={provider.name} 
+                      className="w-6 h-6 rounded-full"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <span className="font-medium">{provider.name}</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => handleRemoveProvider(provider.id)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-                <button 
-                  type="button"
-                  onClick={() => handleRemoveProvider(provider.id)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor={`website-${provider.id}`} className="text-xs text-gray-400">Website URL</Label>
-                <Input
-                  id={`website-${provider.id}`}
-                  value={provider.url}
-                  readOnly
-                  className="admin-input text-xs bg-gray-900"
-                />
                 
-                <Label htmlFor={`redirect-${provider.id}`} className="text-xs text-gray-400">App Redirect Link</Label>
-                <Input
-                  id={`redirect-${provider.id}`}
-                  value={provider.redirectLink || ''}
-                  onChange={(e) => handleUpdateProviderRedirectLink(provider.id, e.target.value)}
-                  placeholder="e.g., netflix://title/12345"
-                  className="admin-input text-xs"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor={`website-${provider.id}`} className="text-xs text-gray-400">Website URL</Label>
+                  <Input
+                    id={`website-${provider.id}`}
+                    value={provider.url}
+                    readOnly
+                    className="admin-input text-xs bg-gray-900"
+                  />
+                  
+                  <Label htmlFor={`redirect-${provider.id}`} className="text-xs text-gray-400">App Redirect Link</Label>
+                  <Input
+                    id={`redirect-${provider.id}`}
+                    value={provider.redirectLink || ''}
+                    onChange={(e) => handleUpdateProviderRedirectLink(provider.id, e.target.value)}
+                    placeholder="e.g., netflix://title/12345"
+                    className="admin-input text-xs"
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-gray-400 text-sm">No providers added yet.</p>
+          )}
         </div>
         
         <div className="grid grid-cols-1 gap-4 border border-gray-700 p-4 rounded-lg">
