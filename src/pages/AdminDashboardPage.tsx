@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -49,9 +48,9 @@ const AdminDashboardPage: React.FC = () => {
   }, [isAuthenticated, navigate]);
   
   // Handler for adding new content
-  const handleAddContent = async (content: Content) => {
+  const handleAddContent = async (content: Partial<Content>) => {
     try {
-      const newContent = await addContent(content);
+      const newContent = await addContent(content as Content);
       setContents([...contents, newContent]);
       setIsFormVisible(false);
       setSelectedContent(undefined);
@@ -63,10 +62,10 @@ const AdminDashboardPage: React.FC = () => {
   };
   
   // Handler for updating content - fixed to properly update state
-  const handleUpdateContent = async (updatedContent: Content) => {
+  const handleUpdateContent = async (updatedContent: Partial<Content>) => {
     try {
       console.log('Updating content:', updatedContent);
-      const result = await updateContent(updatedContent);
+      const result = await updateContent(updatedContent as Content);
       setContents(contents.map(c => c.id === result.id ? result : c));
       setIsFormVisible(false);
       setSelectedContent(undefined);
@@ -199,7 +198,7 @@ const AdminDashboardPage: React.FC = () => {
         {isFormVisible && (
           <AdminContentForm
             key={selectedContent?.id || 'new'} // Force re-render when content changes
-            initialContent={selectedContent}
+            content={selectedContent}
             onSave={selectedContent ? handleUpdateContent : handleAddContent}
             onCancel={handleCancelEdit}
           />

@@ -256,10 +256,10 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       trailerUrl: data.trailer_url,
       duration: data.duration,
       status: data.status,
-      watchProviders: Array.isArray(data.watch_providers) ? data.watch_providers : [],
-      cast: Array.isArray(data.cast_info) ? data.cast_info : [],
+      watchProviders: parseWatchProviders(data.watch_providers),
+      cast: parseCastMembers(data.cast_info),
       // Properly process seasons with episodes
-      seasons: Array.isArray(data.seasons) ? data.seasons.map((season: any) => ({
+      seasons: parseSeasons(data.seasons).map((season: any) => ({
         id: season.id || crypto.randomUUID(),
         name: season.name || `Season ${season.seasonNumber || 1}`,
         seasonNumber: season.seasonNumber || 1,
@@ -278,9 +278,9 @@ export const getContentById = async (id: string): Promise<Content | null> => {
           duration: episode.duration || '',
           rating: episode.rating || 0
         })) : []
-      })) : [],
-      images: Array.isArray(data.images) ? data.images : [],
-      embedVideos: Array.isArray(data.embed_videos) ? data.embed_videos : []
+      })),
+      images: parseImages(data.images),
+      embedVideos: parseEmbedVideos(data.embed_videos)
     };
 
     console.log('Processed content data:', {

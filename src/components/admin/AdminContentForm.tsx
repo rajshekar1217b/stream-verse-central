@@ -31,7 +31,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
   const [posterPath, setPosterPath] = useState(content?.posterPath || '');
   const [backdropPath, setBackdropPath] = useState(content?.backdropPath || '');
   const [releaseDate, setReleaseDate] = useState(content?.releaseDate || '');
-  const [type, setType] = useState(content?.type || 'movie');
+  const [type, setType] = useState<'movie' | 'tv'>(content?.type || 'movie');
   const [genres, setGenres] = useState(content?.genres || []);
   const [rating, setRating] = useState(content?.rating?.toString() || '');
   const [trailerUrl, setTrailerUrl] = useState(content?.trailerUrl || '');
@@ -275,6 +275,11 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
     }
   };
 
+  // Fixed type handler for Select component
+  const handleTypeChange = (value: string) => {
+    setType(value as 'movie' | 'tv');
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Card>
@@ -313,7 +318,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
             </div>
             <div className="grid gap-2">
               <Label htmlFor="type">Type</Label>
-              <Select value={type} onValueChange={setType}>
+              <Select value={type} onValueChange={handleTypeChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
