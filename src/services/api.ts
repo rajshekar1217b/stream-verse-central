@@ -1,3 +1,4 @@
+
 import { supabase } from '@/types/supabase-extensions';
 import { Content, CastMember, WatchProvider, Episode } from '@/types';
 
@@ -19,7 +20,7 @@ export const getContentById = async (id: string): Promise<Content | null> => {
     console.log('Fetching content by ID:', id);
     
     const { data, error } = await supabase
-      .from('content')
+      .from('contents')
       .select('*')
       .eq('id', id)
       .single();
@@ -51,7 +52,7 @@ export const getContentById = async (id: string): Promise<Content | null> => {
               typeof data.genres === 'string' ? JSON.parse(data.genres) : [],
       trailerUrl: data.trailer_url,
       watchProviders: parseJsonArray(data.watch_providers) as WatchProvider[],
-      cast: parseJsonArray(data.cast) as CastMember[],
+      cast: parseJsonArray(data.cast_info) as CastMember[],
       images: parseJsonArray(data.images) as { path: string; type: 'poster' | 'backdrop' }[],
       embedVideos: parseJsonArray(data.embed_videos) as { url: string; title: string }[],
       seasons: []
@@ -133,9 +134,8 @@ export const getContentById = async (id: string): Promise<Content | null> => {
 
 export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day' | 'week' = 'day'): Promise<Content[]> => {
   try {
-    // Fetch data from Supabase (replace with your actual Supabase table and columns)
     const { data, error } = await supabase
-      .from('content')
+      .from('contents')
       .select('*')
       .eq('type', type)
       .limit(50);
@@ -145,7 +145,6 @@ export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day'
       return [];
     }
 
-    // Map the Supabase data to the Content type
     const contentList: Content[] = data.map((item) => ({
       id: item.id,
       title: item.title,
@@ -159,8 +158,8 @@ export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day'
       genres: Array.isArray(item.genres) ? item.genres : [],
       trailerUrl: item.trailer_url,
       watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
-      cast: parseJsonArray(item.cast) as CastMember[],
-	  images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      cast: parseJsonArray(item.cast_info) as CastMember[],
+      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
       embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
       seasons: parseJsonArray(item.seasons) as any[],
     }));
@@ -170,4 +169,204 @@ export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day'
     console.error('Error in getTrendingContent:', error);
     return [];
   }
+};
+
+export const getAllContent = async (): Promise<Content[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all content:', error);
+      return [];
+    }
+
+    const contentList: Content[] = data.map((item) => ({
+      id: item.id,
+      title: item.title,
+      overview: item.overview || '',
+      posterPath: item.poster_path,
+      backdropPath: item.backdrop_path,
+      releaseDate: item.release_date,
+      rating: Number(item.rating) || 0,
+      duration: item.duration,
+      type: item.type as 'movie' | 'tv',
+      genres: Array.isArray(item.genres) ? item.genres : [],
+      trailerUrl: item.trailer_url,
+      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(item.cast_info) as CastMember[],
+      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
+      seasons: parseJsonArray(item.seasons) as any[],
+    }));
+
+    return contentList;
+  } catch (error) {
+    console.error('Error in getAllContent:', error);
+    return [];
+  }
+};
+
+export const getContentByType = async (type: 'movie' | 'tv'): Promise<Content[]> => {
+  return getTrendingContent(type);
+};
+
+export const addContent = async (content: Content): Promise<Content> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .insert({
+        id: content.id,
+        title: content.title,
+        overview: content.overview,
+        poster_path: content.posterPath,
+        backdrop_path: content.backdropPath,
+        release_date: content.releaseDate,
+        type: content.type,
+        genres: content.genres,
+        rating: content.rating,
+        trailer_url: content.trailerUrl,
+        duration: content.duration,
+        status: content.status,
+        watch_providers: JSON.stringify(content.watchProviders || []),
+        cast_info: JSON.stringify(content.cast || []),
+        seasons: JSON.stringify(content.seasons || []),
+        images: JSON.stringify(content.images || []),
+        embed_videos: JSON.stringify(content.embedVideos || [])
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding content:', error);
+      throw error;
+    }
+
+    return content;
+  } catch (error) {
+    console.error('Error in addContent:', error);
+    throw error;
+  }
+};
+
+export const updateContent = async (content: Content): Promise<Content> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .update({
+        title: content.title,
+        overview: content.overview,
+        poster_path: content.posterPath,
+        backdrop_path: content.backdropPath,
+        release_date: content.releaseDate,
+        type: content.type,
+        genres: content.genres,
+        rating: content.rating,
+        trailer_url: content.trailerUrl,
+        duration: content.duration,
+        status: content.status,
+        watch_providers: JSON.stringify(content.watchProviders || []),
+        cast_info: JSON.stringify(content.cast || []),
+        seasons: JSON.stringify(content.seasons || []),
+        images: JSON.stringify(content.images || []),
+        embed_videos: JSON.stringify(content.embedVideos || []),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', content.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating content:', error);
+      throw error;
+    }
+
+    return content;
+  } catch (error) {
+    console.error('Error in updateContent:', error);
+    throw error;
+  }
+};
+
+export const deleteContent = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('contents')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting content:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in deleteContent:', error);
+    throw error;
+  }
+};
+
+export const searchContent = async (query: string): Promise<Content[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*')
+      .or(`title.ilike.%${query}%,overview.ilike.%${query}%`)
+      .limit(20);
+
+    if (error) {
+      console.error('Error searching content:', error);
+      return [];
+    }
+
+    const contentList: Content[] = data.map((item) => ({
+      id: item.id,
+      title: item.title,
+      overview: item.overview || '',
+      posterPath: item.poster_path,
+      backdropPath: item.backdrop_path,
+      releaseDate: item.release_date,
+      rating: Number(item.rating) || 0,
+      duration: item.duration,
+      type: item.type as 'movie' | 'tv',
+      genres: Array.isArray(item.genres) ? item.genres : [],
+      trailerUrl: item.trailer_url,
+      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(item.cast_info) as CastMember[],
+      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
+      seasons: parseJsonArray(item.seasons) as any[],
+    }));
+
+    return contentList;
+  } catch (error) {
+    console.error('Error in searchContent:', error);
+    return [];
+  }
+};
+
+export const getCategories = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching categories:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getCategories:', error);
+    return [];
+  }
+};
+
+export const importFromTmdb = async (tmdbId: string, type: 'movie' | 'tv'): Promise<Content> => {
+  // This is a placeholder function - in a real implementation, 
+  // you would call TMDB API and parse the response
+  throw new Error('TMDB import not implemented yet');
 };
