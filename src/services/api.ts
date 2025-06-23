@@ -1,4 +1,3 @@
-
 import { supabase } from '@/types/supabase-extensions';
 import { Content, CastMember, WatchProvider, Episode, Category } from '@/types';
 
@@ -410,116 +409,25 @@ export const getCategories = async (): Promise<Category[]> => {
 export const importFromTmdb = async (tmdbId: string, type: 'movie' | 'tv'): Promise<Content> => {
   console.log(`Importing ${type} with TMDB ID: ${tmdbId}`);
   
-  // Since no real TMDB API key is configured, we'll create enhanced mock data
-  // In a real implementation, this would call the TMDB API
-  
-  const mockMovieData = {
-    id: `tmdb-${tmdbId}-${type}`,
-    title: type === 'movie' ? `Enhanced Sample Movie ${tmdbId}` : `Enhanced Sample TV Show ${tmdbId}`,
-    overview: type === 'movie' 
-      ? `This is an enhanced sample movie imported from TMDB with ID ${tmdbId}. In a real implementation, this would contain the actual movie description from TMDB's database.`
-      : `This is an enhanced sample TV series imported from TMDB with ID ${tmdbId}. In a real implementation, this would contain the actual series description from TMDB's database.`,
-    posterPath: `https://image.tmdb.org/t/p/w500/sample-poster-${tmdbId}.jpg`,
-    backdropPath: `https://image.tmdb.org/t/p/original/sample-backdrop-${tmdbId}.jpg`,
-    releaseDate: type === 'movie' ? '2024-01-15' : '2024-01-15',
-    type: type,
-    genres: type === 'movie' 
-      ? ['Action', 'Drama', 'Thriller']
-      : ['Drama', 'Sci-Fi & Fantasy', 'Action & Adventure'],
-    rating: 7.5 + (parseInt(tmdbId) % 3) * 0.5, // Varies between 7.5-9.0
-    trailerUrl: `https://www.youtube.com/watch?v=sample-trailer-${tmdbId}`,
-    duration: type === 'movie' ? '120min' : undefined,
-    status: type === 'movie' ? 'Released' : 'Returning Series',
-    watchProviders: [
-      {
-        id: '8',
-        name: 'Netflix',
-        logoPath: 'https://image.tmdb.org/t/p/w500/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg',
-        url: 'https://www.netflix.com',
-        redirectLink: `netflix://title/${tmdbId}`
-      },
-      {
-        id: '1899',
-        name: 'Max',
-        logoPath: 'https://image.tmdb.org/t/p/w500/170ZfHTLT6ZlG38iLLpNYcBGUkG.jpg',
-        url: 'https://www.max.com',
-        redirectLink: `https://www.max.com/${type}s/${tmdbId}`
-      }
-    ] as WatchProvider[],
-    cast: [
-      {
-        id: '1',
-        name: 'Sample Actor One',
-        character: 'Main Character',
-        profilePath: `https://image.tmdb.org/t/p/w500/sample-actor-1-${tmdbId}.jpg`
-      },
-      {
-        id: '2',
-        name: 'Sample Actor Two',
-        character: 'Supporting Character',
-        profilePath: `https://image.tmdb.org/t/p/w500/sample-actor-2-${tmdbId}.jpg`
-      }
-    ] as CastMember[],
-    images: [
-      {
-        path: `https://image.tmdb.org/t/p/w500/sample-poster-${tmdbId}.jpg`,
-        type: 'poster' as const
-      },
-      {
-        path: `https://image.tmdb.org/t/p/original/sample-backdrop-${tmdbId}.jpg`,
-        type: 'backdrop' as const
-      }
-    ],
-    embedVideos: [
-      {
-        url: `https://www.youtube.com/watch?v=sample-trailer-${tmdbId}`,
-        title: 'Official Trailer'
-      }
-    ],
-    seasons: type === 'tv' ? [
-      {
-        id: `${tmdbId}-s1`,
-        name: 'Season 1',
-        seasonNumber: 1,
-        episodeCount: 10,
-        posterPath: `https://image.tmdb.org/t/p/w500/sample-season-1-${tmdbId}.jpg`,
-        airDate: '2024-01-15',
-        overview: 'The first season of this sample TV show.',
-        episodes: Array.from({ length: 10 }, (_, i) => ({
-          id: `${tmdbId}-s1-e${i + 1}`,
-          title: `Episode ${i + 1}`,
-          overview: `This is episode ${i + 1} of the sample TV show.`,
-          episodeNumber: i + 1,
-          airDate: `2024-01-${15 + i}`,
-          duration: '45min',
-          rating: 7.0 + (i % 3) * 0.3,
-          stillPath: `https://image.tmdb.org/t/p/w500/sample-episode-${tmdbId}-${i + 1}.jpg`
-        })) as Episode[]
-      },
-      {
-        id: `${tmdbId}-s2`,
-        name: 'Season 2',
-        seasonNumber: 2,
-        episodeCount: 12,
-        posterPath: `https://image.tmdb.org/t/p/w500/sample-season-2-${tmdbId}.jpg`,
-        airDate: '2025-01-15',
-        overview: 'The second season of this sample TV show.',
-        episodes: Array.from({ length: 12 }, (_, i) => ({
-          id: `${tmdbId}-s2-e${i + 1}`,
-          title: `Episode ${i + 1}`,
-          overview: `This is episode ${i + 1} of season 2.`,
-          episodeNumber: i + 1,
-          airDate: `2025-01-${15 + i}`,
-          duration: '45min',
-          rating: 7.2 + (i % 3) * 0.3,
-          stillPath: `https://image.tmdb.org/t/p/w500/sample-episode-s2-${tmdbId}-${i + 1}.jpg`
-        })) as Episode[]
-      }
-    ] : []
-  };
+  try {
+    const { data, error } = await supabase.functions.invoke('tmdb-import', {
+      body: { tmdbId, type }
+    })
 
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+    if (error) {
+      console.error('Error calling TMDB import function:', error)
+      throw new Error(`Failed to import from TMDB: ${error.message}`)
+    }
 
-  return mockMovieData as Content;
+    if (!data) {
+      throw new Error('No data received from TMDB')
+    }
+
+    console.log('Successfully imported from TMDB:', data.title)
+    return data as Content
+    
+  } catch (error) {
+    console.error('TMDB import error:', error)
+    throw new Error(error instanceof Error ? error.message : 'Failed to import from TMDB')
+  }
 };
