@@ -222,11 +222,8 @@ export const deleteContent = async (id: string): Promise<void> => {
 // Get content by ID with improved error handling
 export const getContentById = async (id: string): Promise<Content | null> => {
   try {
-    if (!id || typeof id !== 'string') {
-      console.error('Invalid content ID provided:', id);
-      return null;
-    }
-
+    console.log('Fetching content by ID:', id);
+    
     const { data, error } = await supabase
       .from('contents')
       .select('*')
@@ -234,41 +231,69 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       .single();
 
     if (error) {
-      console.error('Error fetching content by ID:', error);
-      return null;
+      console.error('Error fetching content:', error);
+      throw error;
     }
 
     if (!data) {
-      console.warn('No content found with ID:', id);
+      console.warn('No content found for ID:', id);
       return null;
     }
 
-    // Convert database fields to Content interface with validation
-    const content: Content = {
+    console.log('Raw content data from database:', data);
+
+    // Process and structure the content data properly
+    const processedContent: Content = {
       id: data.id,
-      title: data.title || 'Untitled',
-      overview: data.overview || 'No overview available',
-      posterPath: data.poster_path || '',
+      title: data.title,
+      overview: data.overview,
+      posterPath: data.poster_path,
       backdropPath: data.backdrop_path,
       releaseDate: data.release_date,
-      type: data.type === 'movie' ? 'movie' : 'tv',
+      type: data.type as 'movie' | 'tv',
       genres: Array.isArray(data.genres) ? data.genres : [],
-      rating: Number(data.rating) || 0,
-      duration: data.duration,
-      status: data.status || 'Unknown',
+      rating: data.rating || 0,
       trailerUrl: data.trailer_url,
-      seasons: parseSeasons(data.seasons),
-      cast: parseCastMembers(data.cast_info),
-      watchProviders: parseWatchProviders(data.watch_providers),
-      embedVideos: parseEmbedVideos(data.embed_videos),
-      images: parseImages(data.images),
+      duration: data.duration,
+      status: data.status,
+      watchProviders: Array.isArray(data.watch_providers) ? data.watch_providers : [],
+      cast: Array.isArray(data.cast_info) ? data.cast_info : [],
+      // Properly process seasons with episodes
+      seasons: Array.isArray(data.seasons) ? data.seasons.map((season: any) => ({
+        id: season.id || crypto.randomUUID(),
+        name: season.name || `Season ${season.seasonNumber || 1}`,
+        seasonNumber: season.seasonNumber || 1,
+        episodeCount: season.episodeCount || (season.episodes ? season.episodes.length : 0),
+        posterPath: season.posterPath || '',
+        airDate: season.airDate || '',
+        overview: season.overview || '',
+        // Ensure episodes are properly structured
+        episodes: Array.isArray(season.episodes) ? season.episodes.map((episode: any, index: number) => ({
+          id: episode.id || `episode-${season.seasonNumber || 1}-${index}`,
+          title: episode.title || `Episode ${episode.episodeNumber || index + 1}`,
+          overview: episode.overview || '',
+          episodeNumber: episode.episodeNumber || index + 1,
+          stillPath: episode.stillPath || '',
+          airDate: episode.airDate || '',
+          duration: episode.duration || '',
+          rating: episode.rating || 0
+        })) : []
+      })) : [],
+      images: Array.isArray(data.images) ? data.images : [],
+      embedVideos: Array.isArray(data.embed_videos) ? data.embed_videos : []
     };
 
-    console.log("Successfully fetched content by ID:", content.title);
-    return content;
+    console.log('Processed content data:', {
+      title: processedContent.title,
+      type: processedContent.type,
+      seasonsCount: processedContent.seasons?.length || 0,
+      episodesCount: processedContent.seasons?.reduce((total, season) => total + (season.episodes?.length || 0), 0) || 0
+    });
+
+    return processedContent;
   } catch (error) {
     console.error('Error in getContentById:', error);
-    return null;
+    throw error;
   }
 };
 
