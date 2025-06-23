@@ -18,12 +18,16 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
   const [selectedSeason, setSelectedSeason] = useState<string>(seasons[0]?.id || '');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
+  console.log('TVShowSeasons received seasons:', seasons);
+
   if (!seasons || seasons.length === 0) {
     return <div className="text-muted-foreground mt-4">No seasons available</div>;
   }
 
   // Find the currently selected season object
   const currentSeason = seasons.find(s => s.id === selectedSeason) || seasons[0];
+  console.log('Current season:', currentSeason);
+  console.log('Current season episodes:', currentSeason.episodes);
 
   return (
     <div className="mt-8">
@@ -65,7 +69,7 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
 
       {/* Desktop Tabs */}
       <div className="hidden md:block">
-        <Tabs defaultValue={seasons[0]?.id} onValueChange={setSelectedSeason} className="w-full">
+        <Tabs value={selectedSeason} onValueChange={setSelectedSeason} className="w-full">
           <div className="relative">
             <HorizontalScrollArea className="w-full pb-1">
               <TabsList className="w-max inline-flex flex-nowrap mb-4">
@@ -105,7 +109,7 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
               )}
               <Badge variant="outline" className="flex items-center gap-1">
                 <Film className="h-3 w-3" />
-                {currentSeason.episodeCount} Episodes
+                {currentSeason.episodes?.length || currentSeason.episodeCount || 0} Episodes
               </Badge>
             </div>
             {currentSeason.overview && (
@@ -114,20 +118,32 @@ const TVShowSeasons: React.FC<TVShowSeasonsProps> = ({ seasons }) => {
           </div>
         </div>
         
-        {currentSeason.episodes && currentSeason.episodes.length > 0 && (
-          viewMode === 'list' ? (
-            <Accordion type="single" collapsible className="w-full">
-              {currentSeason.episodes.map((episode) => (
-                <EpisodeListItem key={episode.id} episode={episode} />
-              ))}
-            </Accordion>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-              {currentSeason.episodes.map((episode) => (
-                <EpisodeGridItem key={episode.id} episode={episode} />
-              ))}
-            </div>
-          )
+        {/* Episodes Section */}
+        {currentSeason.episodes && currentSeason.episodes.length > 0 ? (
+          <div>
+            <h4 className="text-lg font-medium mb-4">Episodes</h4>
+            {viewMode === 'list' ? (
+              <Accordion type="single" collapsible className="w-full">
+                {currentSeason.episodes.map((episode, index) => (
+                  <EpisodeListItem key={episode.id || `episode-${index}`} episode={episode} />
+                ))}
+              </Accordion>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                {currentSeason.episodes.map((episode, index) => (
+                  <EpisodeGridItem key={episode.id || `episode-${index}`} episode={episode} />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Film className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p>No episodes available for this season</p>
+            {currentSeason.episodeCount && currentSeason.episodeCount > 0 && (
+              <p className="text-sm">Expected {currentSeason.episodeCount} episodes</p>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -154,7 +170,7 @@ const EpisodeListItem: React.FC<EpisodeItemProps> = ({ episode }) => {
                 {episode.duration}
               </span>
             )}
-            {episode.rating && (
+            {episode.rating && episode.rating > 0 && (
               <span className="flex items-center">
                 <Star className="h-3 w-3 mr-1 text-yellow-500" />
                 {episode.rating}
@@ -208,7 +224,7 @@ const EpisodeListItem: React.FC<EpisodeItemProps> = ({ episode }) => {
                     {episode.duration}
                   </span>
                 )}
-                {episode.rating && (
+                {episode.rating && episode.rating > 0 && (
                   <span className="flex items-center">
                     <Star className="h-4 w-4 mr-1 text-yellow-500" />
                     {episode.rating}
@@ -257,7 +273,7 @@ const EpisodeGridItem: React.FC<EpisodeItemProps> = ({ episode }) => {
                   {episode.duration}
                 </span>
               )}
-              {episode.rating && (
+              {episode.rating && episode.rating > 0 && (
                 <span className="flex items-center">
                   <Star className="h-3 w-3 mr-1 text-yellow-500" />
                   {episode.rating}
@@ -294,7 +310,7 @@ const EpisodeGridItem: React.FC<EpisodeItemProps> = ({ episode }) => {
                 {episode.duration}
               </span>
             )}
-            {episode.rating && (
+            {episode.rating && episode.rating > 0 && (
               <span className="flex items-center">
                 <Star className="h-4 w-4 mr-1 text-yellow-500" />
                 {episode.rating}

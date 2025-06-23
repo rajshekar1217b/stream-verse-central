@@ -46,6 +46,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
 
   useEffect(() => {
     if (content) {
+      console.log('Loading content into form:', content);
       setTitle(content.title || '');
       setOverview(content.overview || '');
       setPosterPath(content.posterPath || '');
@@ -59,7 +60,25 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
       setStatus(content.status || '');
       setWatchProviders(content.watchProviders || []);
       setCast(content.cast || []);
-      setSeasons(content.seasons || []);
+      
+      // Ensure seasons are properly loaded with episodes
+      const loadedSeasons = (content.seasons || []).map((season, index) => ({
+        ...season,
+        id: season.id || `season-${index}`,
+        episodes: (season.episodes || []).map((episode, episodeIndex) => ({
+          id: episode.id || `episode-${index}-${episodeIndex}`,
+          title: episode.title || `Episode ${episodeIndex + 1}`,
+          overview: episode.overview || '',
+          episodeNumber: episode.episodeNumber || episodeIndex + 1,
+          stillPath: episode.stillPath || '',
+          airDate: episode.airDate || '',
+          duration: episode.duration || '',
+          rating: episode.rating || 0
+        }))
+      }));
+      
+      console.log('Loaded seasons with episodes:', loadedSeasons);
+      setSeasons(loadedSeasons);
       setImages(content.images || []);
       setEmbedVideos(content.embedVideos || []);
     }
@@ -127,6 +146,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
     } else {
       updatedSeasons[seasonIndex] = { ...updatedSeasons[seasonIndex], [field]: value };
     }
+    console.log('Updated seasons after change:', updatedSeasons);
     setSeasons(updatedSeasons);
   };
 
@@ -156,6 +176,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
       ...updatedSeasons[seasonIndex], 
       episodes: updatedEpisodes 
     };
+    console.log('Updated episodes after change:', updatedEpisodes);
     setSeasons(updatedSeasons);
   };
 
@@ -175,8 +196,10 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
     
     updatedSeasons[seasonIndex] = {
       ...updatedSeasons[seasonIndex],
-      episodes: [...currentEpisodes, newEpisode]
+      episodes: [...currentEpisodes, newEpisode],
+      episodeCount: currentEpisodes.length + 1
     };
+    console.log('Added new episode, updated season:', updatedSeasons[seasonIndex]);
     setSeasons(updatedSeasons);
   };
 
@@ -184,24 +207,45 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
     const updatedSeasons = [...seasons];
     const updatedEpisodes = [...(updatedSeasons[seasonIndex].episodes || [])];
     updatedEpisodes.splice(episodeIndex, 1);
-    updatedSeasons[seasonIndex] = { ...updatedSeasons[seasonIndex], episodes: updatedEpisodes };
+    
+    // Update episode numbers after removal
+    const renumberedEpisodes = updatedEpisodes.map((episode, index) => ({
+      ...episode,
+      episodeNumber: index + 1
+    }));
+    
+    updatedSeasons[seasonIndex] = { 
+      ...updatedSeasons[seasonIndex], 
+      episodes: renumberedEpisodes,
+      episodeCount: renumberedEpisodes.length
+    };
     setSeasons(updatedSeasons);
   };
 
   const addSeason = () => {
-    setSeasons([...seasons, { 
+    const newSeason: Season = {
       id: crypto.randomUUID(), 
       name: `Season ${seasons.length + 1}`, 
       seasonNumber: seasons.length + 1,
       episodeCount: 0,
       episodes: []
-    }]);
+    };
+    console.log('Adding new season:', newSeason);
+    setSeasons([...seasons, newSeason]);
   };
 
   const removeSeason = (index: number) => {
     const updatedSeasons = [...seasons];
     updatedSeasons.splice(index, 1);
-    setSeasons(updatedSeasons);
+    
+    // Update season numbers after removal
+    const renumberedSeasons = updatedSeasons.map((season, idx) => ({
+      ...season,
+      seasonNumber: idx + 1,
+      name: season.name.includes('Season') ? `Season ${idx + 1}` : season.name
+    }));
+    
+    setSeasons(renumberedSeasons);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -210,10 +254,8 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
 
     try {
       // Process seasons data to ensure proper structure
-      const processedSeasons = seasons.map((season, index) => ({
-        ...season,
-        id: season.id || `season-${index}`,
-        episodes: (season.episodes || []).map((episode, episodeIndex) => ({
+      const processedSeasons = seasons.map((season, index) => {
+        const seasonEpisodes = (season.episodes || []).map((episode, episodeIndex) => ({
           id: episode.id || `episode-${index}-${episodeIndex}`,
           title: episode.title || `Episode ${episodeIndex + 1}`,
           overview: episode.overview || '',
@@ -222,8 +264,15 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
           airDate: episode.airDate || '',
           duration: episode.duration || '',
           rating: episode.rating || 0
-        }))
-      }));
+        }));
+
+        return {
+          ...season,
+          id: season.id || `season-${index}`,
+          episodes: seasonEpisodes,
+          episodeCount: seasonEpisodes.length
+        };
+      });
 
       const contentData: Partial<Content> = {
         id: content?.id || crypto.randomUUID(),
@@ -261,7 +310,12 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
         title: contentData.title,
         type: contentData.type,
         seasonsCount: contentData.seasons?.length || 0,
-        episodesCount: contentData.seasons?.reduce((total, season) => total + (season.episodes?.length || 0), 0) || 0
+        episodesCount: contentData.seasons?.reduce((total, season) => total + (season.episodes?.length || 0), 0) || 0,
+        seasonsDetail: contentData.seasons?.map(s => ({ 
+          name: s.name, 
+          episodeCount: s.episodes?.length || 0,
+          episodes: s.episodes?.map(e => ({ title: e.title, number: e.episodeNumber }))
+        }))
       });
 
       await onSave(contentData);
@@ -467,15 +521,23 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
       {type === 'tv' && (
         <Card>
           <CardHeader>
-            <CardTitle>Seasons</CardTitle>
-            <CardDescription>Add or edit seasons and episodes.</CardDescription>
+            <CardTitle>Seasons & Episodes</CardTitle>
+            <CardDescription>Add or edit seasons and their episodes.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {seasons.map((season, seasonIndex) => (
-                <div key={seasonIndex} className="border p-4 rounded-md">
-                  <h3 className="text-lg font-semibold mb-2">Season {seasonIndex + 1}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div key={seasonIndex} className="border p-4 rounded-md space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Season {seasonIndex + 1}</h3>
+                    <Button type="button" variant="destructive" size="sm" onClick={() => removeSeason(seasonIndex)}>
+                      <Trash className="h-4 w-4 mr-1" />
+                      Remove Season
+                    </Button>
+                  </div>
+                  
+                  {/* Season Basic Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor={`season-name-${seasonIndex}`}>Name</Label>
                       <Input
@@ -485,12 +547,12 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor={`season-episode-count-${seasonIndex}`}>Episode Count</Label>
+                      <Label htmlFor={`season-season-number-${seasonIndex}`}>Season Number</Label>
                       <Input
                         type="number"
-                        id={`season-episode-count-${seasonIndex}`}
-                        value={season.episodeCount}
-                        onChange={(e) => handleSeasonChange(seasonIndex, 'episodeCount', parseInt(e.target.value))}
+                        id={`season-season-number-${seasonIndex}`}
+                        value={season.seasonNumber}
+                        onChange={(e) => handleSeasonChange(seasonIndex, 'seasonNumber', parseInt(e.target.value))}
                       />
                     </div>
                     <div className="grid gap-2">
@@ -511,7 +573,8 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
                       />
                     </div>
                   </div>
-                  <div className="grid gap-2 mb-4">
+                  
+                  <div className="grid gap-2">
                     <Label htmlFor={`season-overview-${seasonIndex}`}>Overview</Label>
                     <Textarea
                       id={`season-overview-${seasonIndex}`}
@@ -519,12 +582,32 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
                       onChange={(e) => handleSeasonChange(seasonIndex, 'overview', e.target.value)}
                     />
                   </div>
-                  <h4 className="text-md font-semibold mb-2">Episodes</h4>
-                  <div className="space-y-2">
+                  
+                  {/* Episodes Section */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-md font-semibold">Episodes ({season.episodes?.length || 0})</h4>
+                      <Button type="button" size="sm" onClick={() => addEpisode(seasonIndex)}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Episode
+                      </Button>
+                    </div>
+                    
                     {(season.episodes || []).map((episode, episodeIndex) => (
-                      <div key={episodeIndex} className="border p-2 rounded-md">
-                        <h5 className="text-sm font-medium mb-1">Episode {episodeIndex + 1}</h5>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div key={episodeIndex} className="border p-3 rounded-md bg-muted/20">
+                        <div className="flex justify-between items-center mb-2">
+                          <h5 className="text-sm font-medium">Episode {episodeIndex + 1}</h5>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeEpisode(seasonIndex, episodeIndex)}
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                           <div className="grid gap-1">
                             <Label htmlFor={`episode-title-${seasonIndex}-${episodeIndex}`}>Title</Label>
                             <Input
@@ -557,7 +640,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
                               }
                             />
                           </div>
-                           <div className="grid gap-1">
+                          <div className="grid gap-1">
                             <Label htmlFor={`episode-still-path-${seasonIndex}-${episodeIndex}`}>Still Path</Label>
                             <Input
                               id={`episode-still-path-${seasonIndex}-${episodeIndex}`}
@@ -581,6 +664,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
                             <Label htmlFor={`episode-rating-${seasonIndex}-${episodeIndex}`}>Rating</Label>
                             <Input
                               type="number"
+                              step="0.1"
                               id={`episode-rating-${seasonIndex}-${episodeIndex}`}
                               value={episode.rating}
                               onChange={(e) =>
@@ -589,6 +673,7 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
                             />
                           </div>
                         </div>
+                        
                         <div className="grid gap-1">
                           <Label htmlFor={`episode-overview-${seasonIndex}-${episodeIndex}`}>Overview</Label>
                           <Textarea
@@ -599,26 +684,14 @@ const AdminContentForm: React.FC<AdminContentFormProps> = ({ content, onSave, on
                             }
                           />
                         </div>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeEpisode(seasonIndex, episodeIndex)}
-                        >
-                          Remove Episode
-                        </Button>
                       </div>
                     ))}
-                    <Button type="button" size="sm" onClick={() => addEpisode(seasonIndex)}>
-                      Add Episode
-                    </Button>
                   </div>
-                  <Button type="button" variant="destructive" onClick={() => removeSeason(seasonIndex)}>
-                    Remove Season
-                  </Button>
                 </div>
               ))}
+              
               <Button type="button" onClick={addSeason}>
+                <Plus className="h-4 w-4 mr-2" />
                 Add Season
               </Button>
             </div>
