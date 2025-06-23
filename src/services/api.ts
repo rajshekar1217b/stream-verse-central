@@ -1,6 +1,6 @@
 
 import { supabase } from '@/types/supabase-extensions';
-import { Content, CastMember, WatchProvider, Episode } from '@/types';
+import { Content, CastMember, WatchProvider, Episode, Category } from '@/types';
 
 // Helper function to safely parse JSON arrays from the database
 function parseJsonArray<T>(jsonString: string | null): T[] {
@@ -13,6 +13,13 @@ function parseJsonArray<T>(jsonString: string | null): T[] {
     console.error('Error parsing JSON array:', e);
     return [];
   }
+}
+
+// Helper function to safely convert Json to string
+function jsonToString(value: any): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  return String(value);
 }
 
 export const getContentById = async (id: string): Promise<Content | null> => {
@@ -42,19 +49,19 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       id: data.id,
       title: data.title,
       overview: data.overview || '',
-      posterPath: data.poster_path,
-      backdropPath: data.backdrop_path,
-      releaseDate: data.release_date,
+      posterPath: jsonToString(data.poster_path),
+      backdropPath: jsonToString(data.backdrop_path),
+      releaseDate: jsonToString(data.release_date),
       rating: Number(data.rating) || 0,
-      duration: data.duration,
+      duration: jsonToString(data.duration),
       type: data.type as 'movie' | 'tv',
       genres: Array.isArray(data.genres) ? data.genres : 
               typeof data.genres === 'string' ? JSON.parse(data.genres) : [],
-      trailerUrl: data.trailer_url,
-      watchProviders: parseJsonArray(data.watch_providers) as WatchProvider[],
-      cast: parseJsonArray(data.cast_info) as CastMember[],
-      images: parseJsonArray(data.images) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(data.embed_videos) as { url: string; title: string }[],
+      trailerUrl: jsonToString(data.trailer_url),
+      watchProviders: parseJsonArray(jsonToString(data.watch_providers)) as WatchProvider[],
+      cast: parseJsonArray(jsonToString(data.cast_info)) as CastMember[],
+      images: parseJsonArray(jsonToString(data.images)) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(jsonToString(data.embed_videos)) as { url: string; title: string }[],
       seasons: []
     };
 
@@ -63,15 +70,14 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       console.log('Processing TV show seasons:', data.seasons);
       
       let seasonsData = [];
-      if (typeof data.seasons === 'string') {
+      const seasonsString = jsonToString(data.seasons);
+      if (seasonsString) {
         try {
-          seasonsData = JSON.parse(data.seasons);
+          seasonsData = JSON.parse(seasonsString);
         } catch (e) {
           console.error('Error parsing seasons JSON:', e);
           seasonsData = [];
         }
-      } else if (Array.isArray(data.seasons)) {
-        seasonsData = data.seasons;
       }
 
       console.log('Parsed seasons data:', seasonsData);
@@ -149,19 +155,19 @@ export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day'
       id: item.id,
       title: item.title,
       overview: item.overview || '',
-      posterPath: item.poster_path,
-      backdropPath: item.backdrop_path,
-      releaseDate: item.release_date,
+      posterPath: jsonToString(item.poster_path),
+      backdropPath: jsonToString(item.backdrop_path),
+      releaseDate: jsonToString(item.release_date),
       rating: Number(item.rating) || 0,
-      duration: item.duration,
+      duration: jsonToString(item.duration),
       type: item.type as 'movie' | 'tv',
       genres: Array.isArray(item.genres) ? item.genres : [],
-      trailerUrl: item.trailer_url,
-      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
-      cast: parseJsonArray(item.cast_info) as CastMember[],
-      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
-      seasons: parseJsonArray(item.seasons) as any[],
+      trailerUrl: jsonToString(item.trailer_url),
+      watchProviders: parseJsonArray(jsonToString(item.watch_providers)) as WatchProvider[],
+      cast: parseJsonArray(jsonToString(item.cast_info)) as CastMember[],
+      images: parseJsonArray(jsonToString(item.images)) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(jsonToString(item.embed_videos)) as { url: string; title: string }[],
+      seasons: parseJsonArray(jsonToString(item.seasons)) as any[],
     }));
 
     return contentList;
@@ -187,19 +193,19 @@ export const getAllContent = async (): Promise<Content[]> => {
       id: item.id,
       title: item.title,
       overview: item.overview || '',
-      posterPath: item.poster_path,
-      backdropPath: item.backdrop_path,
-      releaseDate: item.release_date,
+      posterPath: jsonToString(item.poster_path),
+      backdropPath: jsonToString(item.backdrop_path),
+      releaseDate: jsonToString(item.release_date),
       rating: Number(item.rating) || 0,
-      duration: item.duration,
+      duration: jsonToString(item.duration),
       type: item.type as 'movie' | 'tv',
       genres: Array.isArray(item.genres) ? item.genres : [],
-      trailerUrl: item.trailer_url,
-      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
-      cast: parseJsonArray(item.cast_info) as CastMember[],
-      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
-      seasons: parseJsonArray(item.seasons) as any[],
+      trailerUrl: jsonToString(item.trailer_url),
+      watchProviders: parseJsonArray(jsonToString(item.watch_providers)) as WatchProvider[],
+      cast: parseJsonArray(jsonToString(item.cast_info)) as CastMember[],
+      images: parseJsonArray(jsonToString(item.images)) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(jsonToString(item.embed_videos)) as { url: string; title: string }[],
+      seasons: parseJsonArray(jsonToString(item.seasons)) as any[],
     }));
 
     return contentList;
@@ -324,19 +330,19 @@ export const searchContent = async (query: string): Promise<Content[]> => {
       id: item.id,
       title: item.title,
       overview: item.overview || '',
-      posterPath: item.poster_path,
-      backdropPath: item.backdrop_path,
-      releaseDate: item.release_date,
+      posterPath: jsonToString(item.poster_path),
+      backdropPath: jsonToString(item.backdrop_path),
+      releaseDate: jsonToString(item.release_date),
       rating: Number(item.rating) || 0,
-      duration: item.duration,
+      duration: jsonToString(item.duration),
       type: item.type as 'movie' | 'tv',
       genres: Array.isArray(item.genres) ? item.genres : [],
-      trailerUrl: item.trailer_url,
-      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
-      cast: parseJsonArray(item.cast_info) as CastMember[],
-      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
-      seasons: parseJsonArray(item.seasons) as any[],
+      trailerUrl: jsonToString(item.trailer_url),
+      watchProviders: parseJsonArray(jsonToString(item.watch_providers)) as WatchProvider[],
+      cast: parseJsonArray(jsonToString(item.cast_info)) as CastMember[],
+      images: parseJsonArray(jsonToString(item.images)) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(jsonToString(item.embed_videos)) as { url: string; title: string }[],
+      seasons: parseJsonArray(jsonToString(item.seasons)) as any[],
     }));
 
     return contentList;
@@ -346,19 +352,55 @@ export const searchContent = async (query: string): Promise<Content[]> => {
   }
 };
 
-export const getCategories = async () => {
+export const getCategories = async (): Promise<Category[]> => {
   try {
-    const { data, error } = await supabase
+    // First get all categories
+    const { data: categoriesData, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
       .order('name');
 
-    if (error) {
-      console.error('Error fetching categories:', error);
+    if (categoriesError) {
+      console.error('Error fetching categories:', categoriesError);
       return [];
     }
 
-    return data || [];
+    if (!categoriesData || categoriesData.length === 0) {
+      return [];
+    }
+
+    // Get category contents mapping
+    const { data: categoryContentsData, error: categoryContentsError } = await supabase
+      .from('category_contents')
+      .select('category_id, content_id');
+
+    if (categoryContentsError) {
+      console.error('Error fetching category contents:', categoryContentsError);
+      return categoriesData.map(cat => ({ ...cat, contents: [] }));
+    }
+
+    // Get all content
+    const allContent = await getAllContent();
+    const contentMap = new Map(allContent.map(content => [content.id, content]));
+
+    // Build categories with their contents
+    const categories: Category[] = categoriesData.map(category => {
+      const categoryContentIds = categoryContentsData
+        .filter(cc => cc.category_id === category.id)
+        .map(cc => cc.content_id);
+      
+      const contents = categoryContentIds
+        .map(id => contentMap.get(id))
+        .filter(content => content !== undefined) as Content[];
+
+      return {
+        id: category.id,
+        name: category.name,
+        contents
+      };
+    });
+
+    return categories;
   } catch (error) {
     console.error('Error in getCategories:', error);
     return [];

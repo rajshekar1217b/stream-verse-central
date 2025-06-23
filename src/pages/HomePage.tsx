@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { getCategories, getAllContent } from '@/services/api';
 import { Content, Category } from '@/types';

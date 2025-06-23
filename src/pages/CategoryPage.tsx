@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getContentByType } from '@/services/api';
+import { getContentByType, getAllContent } from '@/services/api';
 import { Content } from '@/types';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -18,7 +17,13 @@ const CategoryPage: React.FC = () => {
     const fetchContent = async () => {
       setIsLoading(true);
       try {
-        const contentData = await getContentByType(type || 'all');
+        let contentData: Content[];
+        if (type === 'movie' || type === 'tv') {
+          contentData = await getContentByType(type);
+        } else {
+          // Handle "all" case by getting all content
+          contentData = await getAllContent();
+        }
         setContents(contentData);
       } catch (error) {
         console.error('Error fetching content:', error);
