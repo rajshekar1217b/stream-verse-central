@@ -1,17 +1,27 @@
+
 import { supabase } from '@/types/supabase-extensions';
 import { Content, CastMember, WatchProvider, Episode, Category } from '@/types';
 
 // Helper function to safely parse JSON arrays from the database
-function parseJsonArray<T>(jsonString: string | null): T[] {
-  if (!jsonString) {
+function parseJsonArray<T>(jsonValue: any): T[] {
+  if (!jsonValue) {
     return [];
   }
   try {
-    // Handle case where jsonString is already an object
-    if (typeof jsonString === 'object') {
-      return Array.isArray(jsonString) ? jsonString as T[] : [];
+    // Handle case where jsonValue is already an array
+    if (Array.isArray(jsonValue)) {
+      return jsonValue as T[];
     }
-    return JSON.parse(jsonString) as T[];
+    // Handle case where jsonValue is already an object (but not array)
+    if (typeof jsonValue === 'object') {
+      return [];
+    }
+    // Handle string case - parse JSON
+    if (typeof jsonValue === 'string') {
+      return JSON.parse(jsonValue) as T[];
+    }
+    // For other types (number, boolean), return empty array
+    return [];
   } catch (e) {
     console.error('Error parsing JSON array:', e);
     return [];
