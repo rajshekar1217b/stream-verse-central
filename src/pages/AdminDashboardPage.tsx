@@ -11,6 +11,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdminContentList from '@/components/admin/AdminContentList';
 import AdminContentForm from '@/components/admin/AdminContentForm';
+import AdminTmdbImport from '@/components/admin/AdminTmdbImport';
 
 const AdminDashboardPage: React.FC = () => {
   const [contents, setContents] = useState<Content[]>([]);
@@ -114,6 +115,12 @@ const AdminDashboardPage: React.FC = () => {
     setIsFormVisible(true);
   };
   
+  // Handler for importing content from TMDB
+  const handleTmdbImport = (importedContent: Content) => {
+    setContents([...contents, importedContent]);
+    toast.success(`"${importedContent.title}" imported successfully`);
+  };
+  
   // Handler for logging out
   const handleLogout = () => {
     logout();
@@ -183,6 +190,9 @@ const AdminDashboardPage: React.FC = () => {
             </Button>
           </div>
         </div>
+        
+        {/* TMDB Import Section */}
+        {!isFormVisible && <AdminTmdbImport onImport={handleTmdbImport} />}
         
         {/* Content Form (visible when adding/editing) */}
         {isFormVisible && (

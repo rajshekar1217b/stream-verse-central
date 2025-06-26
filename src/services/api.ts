@@ -399,3 +399,75 @@ export const getCategories = async (): Promise<Category[]> => {
     return [];
   }
 };
+
+export const importFromTmdb = async (tmdbId: string, type: 'movie' | 'tv'): Promise<Content> => {
+  console.log(`Starting TMDB import for ${type} with ID: ${tmdbId}`);
+  
+  try {
+    // Validate inputs
+    if (!tmdbId || !tmdbId.trim()) {
+      throw new Error('TMDB ID is required');
+    }
+
+    if (!['movie', 'tv'].includes(type)) {
+      throw new Error('Type must be either "movie" or "tv"');
+    }
+
+    console.log('Calling TMDB import edge function...');
+    
+    const { data, error } = await supabase.functions.invoke('tmdb-import', {
+      body: { tmdbId: tmdbId.trim(), type }
+    });
+
+    if (error) {
+      console.error('Edge function error:', error);
+      throw new Error(`Failed to import from TMDB: ${error.message || 'Unknown error'}`);
+    }
+
+    if (!data) {
+      throw new Error('No data received from TMDB API');
+    }
+
+    if (data.error) {
+      console.error('TMDB API error:', data.error);
+      throw new Error(data.error);
+    }
+
+    // Validate required fields
+    if (!data.title) {
+      throw new Error('Invalid TMDB response: missing title');
+    }
+
+    console.log('Successfully imported from TMDB:', data.title);
+    
+    // Ensure all arrays are properly formatted
+    const processedContent: Content = {
+      ...data,
+      genres: Array.isArray(data.genres) ? data.genres : [],
+      watchProviders: Array.isArray(data.watchProviders) ? data.watchProviders : [],
+      cast: Array.isArray(data.cast) ? data.cast : [],
+      images: Array.isArray(data.images) ? data.images : [],
+      embedVideos: Array.isArray(data.embedVideos) ? data.embedVideos : [],
+      seasons: Array.isArray(data.seasons) ? data.seasons : [],
+      rating: Number(data.rating) || 0,
+      posterPath: data.posterPath || '',
+      backdropPath: data.backdropPath || '',
+      overview: data.overview || '',
+      releaseDate: data.releaseDate || '',
+      trailerUrl: data.trailerUrl || '',
+      duration: data.duration || '',
+      status: data.status || ''
+    };
+
+    return processedContent;
+    
+  } catch (error) {
+    console.error('TMDB import error:', error);
+    
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error('An unexpected error occurred during TMDB import');
+    }
+  }
+};
