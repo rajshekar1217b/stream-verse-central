@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,55 +16,127 @@ serve(async (req) => {
     const { tmdbId, type } = await req.json()
     const TMDB_API_KEY = Deno.env.get('TMDB_API_KEY')
 
+    console.log('TMDB Import request:', { tmdbId, type })
+
     if (!TMDB_API_KEY) {
-      throw new Error('TMDB API key not configured')
+      console.error('TMDB API key not found in environment')
+      return new Response(
+        JSON.stringify({ 
+          error: 'TMDB API key not configured. Please add your TMDB_API_KEY to Supabase secrets.' 
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
+    if (!tmdbId || !type) {
+      return new Response(
+        JSON.stringify({ error: 'Missing tmdbId or type parameter' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    console.log('Fetching basic data from TMDB...')
+    
     // Fetch basic movie/TV show data
     const basicResponse = await fetch(
-      `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${TMDB_API_KEY}`
+      `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US`
     )
     
     if (!basicResponse.ok) {
-      throw new Error(`TMDB API error: ${basicResponse.status}`)
+      console.error('TMDB API error:', basicResponse.status, basicResponse.statusText)
+      const errorText = await basicResponse.text()
+      console.error('TMDB API error response:', errorText)
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `TMDB API error: ${basicResponse.status} - ${basicResponse.statusText}. Please check your TMDB ID and try again.` 
+        }),
+        { 
+          status: basicResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
     
     const basicData = await basicResponse.json()
+    console.log('Basic data fetched:', basicData.title || basicData.name)
 
-    // Fetch additional data in parallel
-    const [creditsResponse, imagesResponse, videosResponse, watchProvidersResponse] = await Promise.all([
-      fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}/credits?api_key=${TMDB_API_KEY}`),
-      fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}/images?api_key=${TMDB_API_KEY}`),
-      fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}/videos?api_key=${TMDB_API_KEY}`),
-      fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}/watch/providers?api_key=${TMDB_API_KEY}`)
-    ])
+    // Fetch additional data in parallel with better error handling
+    const fetchWithFallback = async (url: string) => {
+      try {
+        const response = await fetch(url)
+        return response.ok ? await response.json() : null
+      } catch (error) {
+        console.warn('Failed to fetch from:', url, error)
+        return null
+      }
+    }
 
+    console.log('Fetching additional data...')
     const [creditsData, imagesData, videosData, watchProvidersData] = await Promise.all([
-      creditsResponse.ok ? creditsResponse.json() : { cast: [] },
-      imagesResponse.ok ? imagesResponse.json() : { posters: [], backdrops: [] },
-      videosResponse.ok ? videosResponse.json() : { results: [] },
-      watchProvidersResponse.ok ? watchProvidersResponse.json() : { results: {} }
+      fetchWithFallback(`https://api.themoviedb.org/3/${type}/${tmdbId}/credits?api_key=${TMDB_API_KEY}`),
+      fetchWithFallback(`https://api.themoviedb.org/3/${type}/${tmdbId}/images?api_key=${TMDB_API_KEY}`),
+      fetchWithFallback(`https://api.themoviedb.org/3/${type}/${tmdbId}/videos?api_key=${TMDB_API_KEY}&language=en-US`),
+      fetchWithFallback(`https://api.themoviedb.org/3/${type}/${tmdbId}/watch/providers?api_key=${TMDB_API_KEY}`)
     ])
+
+    console.log('Additional data fetched')
 
     // Process seasons for TV shows
     let seasons = []
     if (type === 'tv' && basicData.seasons) {
+      console.log('Processing TV seasons...')
       const seasonPromises = basicData.seasons
         .filter((season: any) => season.season_number > 0)
-        .slice(0, 5) // Limit to first 5 seasons
+        .slice(0, 10) // Limit to first 10 seasons
         .map(async (season: any) => {
-          try {
-            const seasonResponse = await fetch(
-              `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`
-            )
-            return seasonResponse.ok ? seasonResponse.json() : null
-          } catch {
-            return null
-          }
+          return await fetchWithFallback(
+            `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}&language=en-US`
+          )
         })
       
       const seasonResults = await Promise.all(seasonPromises)
       seasons = seasonResults.filter(Boolean)
+      console.log(`Processed ${seasons.length} seasons`)
+    }
+
+    // Get trailer URL
+    const trailerVideo = videosData?.results?.find((v: any) => 
+      v.type === 'Trailer' && v.site === 'YouTube'
+    )
+    const trailerUrl = trailerVideo 
+      ? `https://www.youtube.com/watch?v=${trailerVideo.key}`
+      : ''
+
+    // Process watch providers (focus on US market)
+    const usProviders = watchProvidersData?.results?.US
+    const watchProviders = []
+    
+    if (usProviders) {
+      const allProviders = [
+        ...(usProviders.flatrate || []),
+        ...(usProviders.rent || []),
+        ...(usProviders.buy || [])
+      ]
+      
+      // Remove duplicates and limit to 8 providers
+      const uniqueProviders = Array.from(
+        new Map(allProviders.map(p => [p.provider_id, p])).values()
+      ).slice(0, 8)
+      
+      watchProviders.push(...uniqueProviders.map((provider: any) => ({
+        id: provider.provider_id?.toString(),
+        name: provider.provider_name,
+        logoPath: `https://image.tmdb.org/t/p/w500${provider.logo_path}`,
+        url: `https://${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`,
+        redirectLink: `https://${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`
+      })))
     }
 
     // Format the response
@@ -77,37 +150,27 @@ serve(async (req) => {
       type: type,
       genres: basicData.genres?.map((g: any) => g.name) || [],
       rating: basicData.vote_average || 0,
-      trailerUrl: videosData.results?.find((v: any) => v.type === 'Trailer')?.key 
-        ? `https://www.youtube.com/watch?v=${videosData.results.find((v: any) => v.type === 'Trailer').key}`
-        : '',
-      duration: type === 'movie' ? `${basicData.runtime}min` : undefined,
+      trailerUrl: trailerUrl,
+      duration: type === 'movie' ? (basicData.runtime ? `${basicData.runtime}min` : '') : undefined,
       status: basicData.status || (type === 'tv' ? 'Returning Series' : 'Released'),
-      watchProviders: Object.values(watchProvidersData.results?.US?.flatrate || [])
-        .slice(0, 5)
-        .map((provider: any) => ({
-          id: provider.provider_id?.toString(),
-          name: provider.provider_name,
-          logoPath: `https://image.tmdb.org/t/p/w500${provider.logo_path}`,
-          url: `https://${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`,
-          redirectLink: `https://${provider.provider_name.toLowerCase().replace(/\s+/g, '')}.com`
-        })),
-      cast: creditsData.cast?.slice(0, 10).map((person: any) => ({
+      watchProviders: watchProviders,
+      cast: creditsData?.cast?.slice(0, 15).map((person: any) => ({
         id: person.id?.toString(),
         name: person.name,
         character: person.character,
         profilePath: person.profile_path ? `https://image.tmdb.org/t/p/w500${person.profile_path}` : undefined
       })) || [],
       images: [
-        ...imagesData.posters?.slice(0, 5).map((img: any) => ({
+        ...(imagesData?.posters?.slice(0, 8).map((img: any) => ({
           path: `https://image.tmdb.org/t/p/w500${img.file_path}`,
           type: 'poster'
-        })) || [],
-        ...imagesData.backdrops?.slice(0, 5).map((img: any) => ({
+        })) || []),
+        ...(imagesData?.backdrops?.slice(0, 8).map((img: any) => ({
           path: `https://image.tmdb.org/t/p/original${img.file_path}`,
           type: 'backdrop'
-        })) || []
+        })) || [])
       ],
-      embedVideos: videosData.results?.slice(0, 3).map((video: any) => ({
+      embedVideos: videosData?.results?.slice(0, 5).map((video: any) => ({
         url: `https://www.youtube.com/watch?v=${video.key}`,
         title: video.name
       })) || [],
@@ -132,6 +195,8 @@ serve(async (req) => {
       }))
     }
 
+    console.log('Successfully processed TMDB data for:', formattedData.title)
+
     return new Response(
       JSON.stringify(formattedData),
       { 
@@ -145,7 +210,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('TMDB import error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: `Import failed: ${error.message || 'Unknown error occurred'}. Please check your TMDB ID and try again.` 
+      }),
       { 
         status: 500,
         headers: { 
