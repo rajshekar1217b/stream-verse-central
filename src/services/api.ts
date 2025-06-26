@@ -7,6 +7,10 @@ function parseJsonArray<T>(jsonString: string | null): T[] {
     return [];
   }
   try {
+    // Handle case where jsonString is already an object
+    if (typeof jsonString === 'object') {
+      return Array.isArray(jsonString) ? jsonString as T[] : [];
+    }
     return JSON.parse(jsonString) as T[];
   } catch (e) {
     console.error('Error parsing JSON array:', e);
@@ -57,10 +61,10 @@ export const getContentById = async (id: string): Promise<Content | null> => {
       genres: Array.isArray(data.genres) ? data.genres : 
               typeof data.genres === 'string' ? JSON.parse(data.genres) : [],
       trailerUrl: jsonToString(data.trailer_url),
-      watchProviders: parseJsonArray(jsonToString(data.watch_providers)) as WatchProvider[],
-      cast: parseJsonArray(jsonToString(data.cast_info)) as CastMember[],
-      images: parseJsonArray(jsonToString(data.images)) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(jsonToString(data.embed_videos)) as { url: string; title: string }[],
+      watchProviders: parseJsonArray(data.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(data.cast_info) as CastMember[],
+      images: parseJsonArray(data.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(data.embed_videos) as { url: string; title: string }[],
       seasons: []
     };
 
@@ -68,17 +72,7 @@ export const getContentById = async (id: string): Promise<Content | null> => {
     if (content.type === 'tv' && data.seasons) {
       console.log('Processing TV show seasons:', data.seasons);
       
-      let seasonsData = [];
-      const seasonsString = jsonToString(data.seasons);
-      if (seasonsString) {
-        try {
-          seasonsData = JSON.parse(seasonsString);
-        } catch (e) {
-          console.error('Error parsing seasons JSON:', e);
-          seasonsData = [];
-        }
-      }
-
+      const seasonsData = parseJsonArray(data.seasons);
       console.log('Parsed seasons data:', seasonsData);
 
       content.seasons = seasonsData.map((season: any) => {
@@ -87,16 +81,7 @@ export const getContentById = async (id: string): Promise<Content | null> => {
         // Parse episodes if they exist
         let episodes: Episode[] = [];
         if (season.episodes) {
-          if (typeof season.episodes === 'string') {
-            try {
-              episodes = JSON.parse(season.episodes);
-            } catch (e) {
-              console.error('Error parsing episodes JSON:', e);
-              episodes = [];
-            }
-          } else if (Array.isArray(season.episodes)) {
-            episodes = season.episodes;
-          }
+          episodes = parseJsonArray(season.episodes);
         }
 
         console.log(`Season ${season.seasonNumber} episodes:`, episodes);
@@ -412,22 +397,22 @@ export const importFromTmdb = async (tmdbId: string, type: 'movie' | 'tv'): Prom
   try {
     const { data, error } = await supabase.functions.invoke('tmdb-import', {
       body: { tmdbId, type }
-    })
+    });
 
     if (error) {
-      console.error('Error calling TMDB import function:', error)
-      throw new Error(`Failed to import from TMDB: ${error.message}`)
+      console.error('Error calling TMDB import function:', error);
+      throw new Error(`Failed to import from TMDB: ${error.message}`);
     }
 
     if (!data) {
-      throw new Error('No data received from TMDB')
+      throw new Error('No data received from TMDB');
     }
 
-    console.log('Successfully imported from TMDB:', data.title)
-    return data as Content
+    console.log('Successfully imported from TMDB:', data.title);
+    return data as Content;
     
   } catch (error) {
-    console.error('TMDB import error:', error)
-    throw new Error(error instanceof Error ? error.message : 'Failed to import from TMDB')
+    console.error('TMDB import error:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to import from TMDB');
   }
 };
