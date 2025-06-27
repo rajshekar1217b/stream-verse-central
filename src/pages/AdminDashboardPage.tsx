@@ -116,9 +116,16 @@ const AdminDashboardPage: React.FC = () => {
   };
   
   // Handler for importing content from TMDB
-  const handleTmdbImport = (importedContent: Content) => {
-    setContents([...contents, importedContent]);
-    toast.success(`"${importedContent.title}" imported successfully`);
+  const handleTmdbImport = async (importedContent: Content) => {
+    try {
+      console.log('Importing TMDB content:', importedContent);
+      const newContent = await addContent(importedContent);
+      setContents([...contents, newContent]);
+      toast.success(`"${importedContent.title}" imported successfully`);
+    } catch (error) {
+      console.error('Error importing TMDB content:', error);
+      toast.error('Failed to import content');
+    }
   };
   
   // Handler for logging out

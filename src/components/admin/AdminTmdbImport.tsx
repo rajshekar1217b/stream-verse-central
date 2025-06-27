@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Download, Search, Loader2, ExternalLink, Play, Users, Calendar, Clock, Star } from 'lucide-react';
+import { Download, Search, Loader2, Calendar, Clock, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { Content } from '@/types';
 import { importFromTmdb } from '@/services/api';
@@ -32,6 +32,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
     setPreviewData(null);
 
     try {
+      console.log('Previewing TMDB content:', { tmdbId: tmdbId.trim(), contentType });
       const content = await importFromTmdb(tmdbId.trim(), contentType);
       setPreviewData(content);
       setIsPreviewMode(true);
@@ -79,7 +80,7 @@ const AdminTmdbImport: React.FC<AdminTmdbImportProps> = ({ onImport }) => {
           TMDB Import
         </CardTitle>
         <CardDescription>
-          Import movies and TV shows from The Movie Database with comprehensive details
+          Import movies and TV shows from The Movie Database
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

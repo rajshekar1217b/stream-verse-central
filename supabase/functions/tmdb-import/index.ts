@@ -32,14 +32,15 @@ serve(async (req) => {
 
     console.log(`Importing ${type} with TMDB ID: ${tmdbId}`);
 
-    // Fetch basic details
+    // Fetch basic details with videos
     const detailsUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${tmdbApiKey}&append_to_response=videos`;
     const detailsResponse = await fetch(detailsUrl);
-    const details = await detailsResponse.json();
-
+    
     if (!detailsResponse.ok) {
-      throw new Error(details.status_message || 'Failed to fetch from TMDB');
+      throw new Error(`TMDB API error: ${detailsResponse.status}`);
     }
+    
+    const details = await detailsResponse.json();
 
     // Fetch credits (cast and crew)
     const creditsUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}/credits?api_key=${tmdbApiKey}`;
@@ -60,36 +61,43 @@ serve(async (req) => {
     let seasons = [];
     if (type === 'tv' && details.seasons) {
       for (const season of details.seasons) {
-        if (season.season_number >= 0) { // Skip specials (season 0) optionally
-          const seasonUrl = `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${tmdbApiKey}`;
-          const seasonResponse = await fetch(seasonUrl);
-          const seasonDetails = await seasonResponse.json();
-          
-          seasons.push({
-            id: `season-${season.season_number}`,
-            name: season.name,
-            seasonNumber: season.season_number,
-            episodeCount: season.episode_count,
-            posterPath: season.poster_path ? `https://image.tmdb.org/t/p/w500${season.poster_path}` : null,
-            airDate: season.air_date,
-            overview: season.overview,
-            episodes: seasonDetails.episodes?.map((episode: any) => ({
-              id: `episode-${episode.id}`,
-              title: episode.name,
-              episodeNumber: episode.episode_number,
-              overview: episode.overview,
-              airDate: episode.air_date,
-              duration: episode.runtime ? `${episode.runtime}min` : undefined,
-              rating: episode.vote_average,
-              stillPath: episode.still_path ? `https://image.tmdb.org/t/p/w500${episode.still_path}` : null
-            })) || []
-          });
+        if (season.season_number >= 0) {
+          try {
+            const seasonUrl = `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${tmdbApiKey}`;
+            const seasonResponse = await fetch(seasonUrl);
+            
+            if (seasonResponse.ok) {
+              const seasonDetails = await seasonResponse.json();
+              
+              seasons.push({
+                id: `season-${season.season_number}`,
+                name: season.name,
+                seasonNumber: season.season_number,
+                episodeCount: season.episode_count,
+                posterPath: season.poster_path ? `https://image.tmdb.org/t/p/w500${season.poster_path}` : null,
+                airDate: season.air_date,
+                overview: season.overview,
+                episodes: seasonDetails.episodes?.map((episode) => ({
+                  id: `episode-${episode.id}`,
+                  title: episode.name,
+                  episodeNumber: episode.episode_number,
+                  overview: episode.overview,
+                  airDate: episode.air_date,
+                  duration: episode.runtime ? `${episode.runtime}min` : undefined,
+                  rating: episode.vote_average,
+                  stillPath: episode.still_path ? `https://image.tmdb.org/t/p/w500${episode.still_path}` : null
+                })) || []
+              });
+            }
+          } catch (error) {
+            console.error(`Error fetching season ${season.season_number}:`, error);
+          }
         }
       }
     }
 
     // Process cast information
-    const cast = credits.cast?.slice(0, 20).map((person: any) => ({
+    const cast = credits.cast?.slice(0, 20).map((person) => ({
       id: person.id.toString(),
       name: person.name,
       character: person.character,
@@ -101,7 +109,7 @@ serve(async (req) => {
     
     // Add posters
     if (images.posters) {
-      images.posters.slice(0, 10).forEach((poster: any) => {
+      images.posters.slice(0, 10).forEach((poster) => {
         processedImages.push({
           path: `https://image.tmdb.org/t/p/w500${poster.file_path}`,
           type: 'poster'
@@ -111,7 +119,7 @@ serve(async (req) => {
     
     // Add backdrops
     if (images.backdrops) {
-      images.backdrops.slice(0, 10).forEach((backdrop: any) => {
+      images.backdrops.slice(0, 10).forEach((backdrop) => {
         processedImages.push({
           path: `https://image.tmdb.org/t/p/w1280${backdrop.file_path}`,
           type: 'backdrop'
@@ -123,9 +131,9 @@ serve(async (req) => {
     const embedVideos = [];
     if (details.videos?.results) {
       details.videos.results
-        .filter((video: any) => video.site === 'YouTube')
+        .filter((video) => video.site === 'YouTube')
         .slice(0, 5)
-        .forEach((video: any) => {
+        .forEach((video) => {
           embedVideos.push({
             url: `https://www.youtube.com/watch?v=${video.key}`,
             title: video.name
@@ -133,12 +141,12 @@ serve(async (req) => {
         });
     }
 
-    // Process watch providers (focusing on US market, you can modify for other regions)
+    // Process watch providers (US market)
     const processedWatchProviders = [];
     const usProviders = watchProviders.results?.US;
     
     if (usProviders?.flatrate) {
-      usProviders.flatrate.forEach((provider: any) => {
+      usProviders.flatrate.forEach((provider) => {
         processedWatchProviders.push({
           id: provider.provider_id.toString(),
           name: provider.provider_name,
@@ -149,7 +157,7 @@ serve(async (req) => {
     }
 
     if (usProviders?.rent) {
-      usProviders.rent.forEach((provider: any) => {
+      usProviders.rent.forEach((provider) => {
         processedWatchProviders.push({
           id: `rent-${provider.provider_id}`,
           name: `${provider.provider_name} (Rent)`,
@@ -160,7 +168,7 @@ serve(async (req) => {
     }
 
     if (usProviders?.buy) {
-      usProviders.buy.forEach((provider: any) => {
+      usProviders.buy.forEach((provider) => {
         processedWatchProviders.push({
           id: `buy-${provider.provider_id}`,
           name: `${provider.provider_name} (Buy)`,
@@ -171,7 +179,7 @@ serve(async (req) => {
     }
 
     // Get the main trailer
-    const mainTrailer = details.videos?.results?.find((video: any) => 
+    const mainTrailer = details.videos?.results?.find((video) => 
       video.site === 'YouTube' && (video.type === 'Trailer' || video.type === 'Official Trailer')
     );
 
@@ -183,7 +191,7 @@ serve(async (req) => {
       backdropPath: details.backdrop_path ? `https://image.tmdb.org/t/p/w1280${details.backdrop_path}` : '',
       releaseDate: details.release_date || details.first_air_date || '',
       type: type,
-      genres: details.genres?.map((genre: any) => genre.name) || [],
+      genres: details.genres?.map((genre) => genre.name) || [],
       rating: details.vote_average || 0,
       trailerUrl: mainTrailer ? `https://www.youtube.com/watch?v=${mainTrailer.key}` : '',
       duration: type === 'movie' 
