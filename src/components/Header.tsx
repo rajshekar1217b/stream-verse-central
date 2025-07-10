@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Menu, X, User, Settings } from 'lucide-react';
+import { Search, Menu, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -72,7 +72,7 @@ const Header: React.FC = () => {
             </Link>
           </nav>
 
-          {/* Right side - Search, Admin, User */}
+          {/* Right side - Search and Admin */}
           <div className="flex items-center">
             {/* Search Form */}
             <form onSubmit={handleSearchSubmit} className="relative mr-2">
@@ -101,11 +101,6 @@ const Header: React.FC = () => {
               title="Admin Dashboard"
             >
               <Settings className="h-5 w-5" />
-            </Button>
-
-            {/* User Icon/Menu */}
-            <Button variant="ghost" size="icon" className="ml-2">
-              <User className="h-5 w-5" />
             </Button>
 
             {/* Mobile Menu Button */}
