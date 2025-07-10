@@ -8,9 +8,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const tmdbApiKey = 'bc7e2dc86a85f194da52360ed092f9cc';
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const tmdbApiKey = Deno.env.get('TMDB_API_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -20,10 +20,6 @@ serve(async (req) => {
   }
 
   try {
-    if (!tmdbApiKey) {
-      throw new Error('TMDB API key not configured');
-    }
-
     const { tmdbId, type } = await req.json();
     
     if (!tmdbId || !type) {
@@ -34,28 +30,32 @@ serve(async (req) => {
 
     // Fetch basic details with videos
     const detailsUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${tmdbApiKey}&append_to_response=videos`;
+    console.log('Fetching details from:', detailsUrl);
+    
     const detailsResponse = await fetch(detailsUrl);
     
     if (!detailsResponse.ok) {
+      console.error(`TMDB API error: ${detailsResponse.status} - ${detailsResponse.statusText}`);
       throw new Error(`TMDB API error: ${detailsResponse.status}`);
     }
     
     const details = await detailsResponse.json();
+    console.log('Details fetched:', details.title || details.name);
 
     // Fetch credits (cast and crew)
     const creditsUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}/credits?api_key=${tmdbApiKey}`;
     const creditsResponse = await fetch(creditsUrl);
-    const credits = await creditsResponse.json();
+    const credits = creditsResponse.ok ? await creditsResponse.json() : { cast: [] };
 
     // Fetch images (posters and backdrops)
     const imagesUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}/images?api_key=${tmdbApiKey}`;
     const imagesResponse = await fetch(imagesUrl);
-    const images = await imagesResponse.json();
+    const images = imagesResponse.ok ? await imagesResponse.json() : { posters: [], backdrops: [] };
 
     // Fetch watch providers
     const watchProvidersUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}/watch/providers?api_key=${tmdbApiKey}`;
     const watchProvidersResponse = await fetch(watchProvidersUrl);
-    const watchProviders = await watchProvidersResponse.json();
+    const watchProviders = watchProvidersResponse.ok ? await watchProvidersResponse.json() : { results: {} };
 
     // For TV shows, fetch seasons and episodes
     let seasons = [];

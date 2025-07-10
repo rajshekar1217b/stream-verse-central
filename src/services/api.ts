@@ -419,6 +419,8 @@ export const importFromTmdb = async (tmdbId: string, type: 'movie' | 'tv'): Prom
       body: { tmdbId: tmdbId.trim(), type }
     });
 
+    console.log('Edge function response:', { data, error });
+
     if (error) {
       console.error('Edge function error:', error);
       throw new Error(`Failed to import from TMDB: ${error.message || 'Unknown error'}`);
