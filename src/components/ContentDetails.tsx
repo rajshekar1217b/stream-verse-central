@@ -2,6 +2,7 @@
 import React from 'react';
 import { Content } from '@/types';
 import { Calendar, Clock, Star } from 'lucide-react';
+import ViewCount from '@/components/ViewCount';
 
 interface ContentDetailsProps {
   content: Content;
@@ -29,6 +30,7 @@ const ContentDetails: React.FC<ContentDetailsProps> = ({ content }) => {
           <Star className="mr-1 h-4 w-4 text-yellow-500" />
           <span>{content.rating}/10</span>
         </div>
+        <ViewCount contentId={content.id} />
         <div className="flex flex-wrap gap-2">
           {content.genres.map((genre, index) => (
             <span

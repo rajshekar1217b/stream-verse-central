@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Content } from '@/types';
 import { Star, Play } from 'lucide-react';
+import ViewCount from '@/components/ViewCount';
 
 interface ContentCardProps {
   content: Content;
@@ -43,11 +44,18 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, size = 'medium' }) =
             </div>
           </div>
           
-          {content.releaseDate && (
-            <p className="text-xs text-white/80 mb-2">
-              {new Date(content.releaseDate).getFullYear()}
-            </p>
-          )}
+          <div className="flex items-center justify-between mb-2">
+            {content.releaseDate && (
+              <p className="text-xs text-white/80">
+                {new Date(content.releaseDate).getFullYear()}
+              </p>
+            )}
+            <ViewCount 
+              contentId={content.id} 
+              className="text-white/80" 
+              showIcon={false}
+            />
+          </div>
           
           {/* Genre badges */}
           {content.genres && content.genres.length > 0 && (
