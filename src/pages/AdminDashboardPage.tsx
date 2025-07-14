@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -56,7 +55,14 @@ const AdminDashboardPage: React.FC = () => {
         if (statsError) {
           console.error('Error fetching analytics:', statsError);
         } else if (statsData && statsData.length > 0) {
-          setAnalyticsStats(statsData[0]);
+          // The RPC returns an array, but we want the first object
+          const stats = statsData[0];
+          setAnalyticsStats({
+            total_views: Number(stats.total_views),
+            total_comments: Number(stats.total_comments),
+            total_subscribers: Number(stats.total_subscribers),
+            total_content: Number(stats.total_content)
+          });
         }
       } catch (error) {
         console.error('Error fetching data:', error);

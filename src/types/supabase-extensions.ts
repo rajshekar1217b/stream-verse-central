@@ -85,6 +85,15 @@ export type ExtendedDatabase = Database & {
           count: number;
         }[];
       };
+      get_recent_activity_stats: {
+        Args: Record<string, never>;
+        Returns: {
+          total_views: number;
+          total_comments: number;
+          total_subscribers: number;
+          total_content: number;
+        }[];
+      };
     };
   };
 };
