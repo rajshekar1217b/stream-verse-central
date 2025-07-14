@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getAllContent, addContent, updateContent, deleteContent } from '@/services/api';
 import { Content } from '@/types';
-import { Plus, LogOut, BarChart, Eye, MessageSquare, Users, Film } from 'lucide-react';
+import { Plus, LogOut, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
@@ -13,14 +13,7 @@ import Footer from '@/components/Footer';
 import AdminContentList from '@/components/admin/AdminContentList';
 import AdminContentForm from '@/components/admin/AdminContentForm';
 import AdminTmdbImport from '@/components/admin/AdminTmdbImport';
-import { supabase } from '@/types/supabase-extensions';
-
-interface AnalyticsStats {
-  total_views: number;
-  total_comments: number;
-  total_subscribers: number;
-  total_content: number;
-}
+import AnalyticsOverview from '@/components/admin/AnalyticsOverview';
 
 const AdminDashboardPage: React.FC = () => {
   const [contents, setContents] = useState<Content[]>([]);
@@ -29,12 +22,11 @@ const AdminDashboardPage: React.FC = () => {
   const [selectedContent, setSelectedContent] = useState<Content | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contentToDelete, setContentToDelete] = useState<string | null>(null);
-  const [analyticsStats, setAnalyticsStats] = useState<AnalyticsStats | null>(null);
   
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   
-  // Fetch content data and analytics
+  // Fetch content data
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/admin-login');
@@ -44,26 +36,8 @@ const AdminDashboardPage: React.FC = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch content
         const contentData = await getAllContent();
         setContents(contentData);
-        
-        // Fetch analytics stats
-        const { data: statsData, error: statsError } = await supabase
-          .rpc('get_recent_activity_stats');
-          
-        if (statsError) {
-          console.error('Error fetching analytics:', statsError);
-        } else if (statsData && statsData.length > 0) {
-          // The RPC returns an array, but we want the first object
-          const stats = statsData[0];
-          setAnalyticsStats({
-            total_views: Number(stats.total_views),
-            total_comments: Number(stats.total_comments),
-            total_subscribers: Number(stats.total_subscribers),
-            total_content: Number(stats.total_content)
-          });
-        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to fetch dashboard data');
@@ -190,7 +164,7 @@ const AdminDashboardPage: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-400">Manage your OTT platform content</p>
+            <p className="text-gray-400">Manage your OTT platform content and analytics</p>
             {isFormVisible && selectedContent && (
               <p className="text-sm text-ott-accent mt-1">
                 Editing: {selectedContent.title}
@@ -226,60 +200,11 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Analytics Overview Cards */}
-        {!isFormVisible && analyticsStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Content</CardTitle>
-                <Film className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analyticsStats.total_content}</div>
-                <p className="text-xs text-muted-foreground">
-                  Movies and TV shows
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analyticsStats.total_views}</div>
-                <p className="text-xs text-muted-foreground">
-                  Last 30 days
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Comments</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analyticsStats.total_comments}</div>
-                <p className="text-xs text-muted-foreground">
-                  Last 30 days
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Subscribers</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{analyticsStats.total_subscribers}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active subscribers
-                </p>
-              </CardContent>
-            </Card>
+        {/* Analytics Overview - Only show when not editing */}
+        {!isFormVisible && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Analytics Overview</h2>
+            <AnalyticsOverview />
           </div>
         )}
         
@@ -337,10 +262,10 @@ const AdminDashboardPage: React.FC = () => {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    );
-  };
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
 
 export default AdminDashboardPage;
