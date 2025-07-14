@@ -11,11 +11,27 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '@/components/ui/chart';
 import { toast } from 'sonner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
+import { 
+  BarChart as RechartsBarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  ResponsiveContainer, 
+  PieChart as RechartsPieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
 import { supabase } from '@/types/supabase-extensions';
 
 interface ViewStats {
@@ -45,6 +61,15 @@ interface SubscriberData {
   subscribed_at: string;
   is_active: boolean;
 }
+
+const chartConfig = {
+  views: {
+    label: "Views",
+  },
+  count: {
+    label: "Count",
+  },
+};
 
 const AdminAnalyticsPage: React.FC = () => {
   const [viewStats, setViewStats] = useState<ViewStats[]>([]);
@@ -193,28 +218,23 @@ const AdminAnalyticsPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {!isLoading && viewStats.length > 0 ? (
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart
-                        data={viewStats}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="title"
-                          angle={-45}
-                          textAnchor="end"
-                          height={70}
-                        />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="view_count" name="Views" fill="#8884d8" />
-                      </RechartsBarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <ChartContainer config={chartConfig} className="h-[400px]">
+                    <RechartsBarChart data={viewStats} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="title"
+                        angle={-45}
+                        textAnchor="end"
+                        height={70}
+                      />
+                      <YAxis />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="view_count" name="Views" fill="hsl(var(--chart-1))" />
+                    </RechartsBarChart>
+                  </ChartContainer>
                 ) : !isLoading ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No view data available yet.
+                    No view data available yet. Views will appear here once users start watching content.
                   </div>
                 ) : null}
               </CardContent>
@@ -373,29 +393,26 @@ const AdminAnalyticsPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {!isLoading && typeStats.length > 0 ? (
-                  <div className="h-[400px] flex justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie
-                          data={typeStats}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={120}
-                          fill="#8884d8"
-                          paddingAngle={5}
-                          dataKey="count"
-                          nameKey="type"
-                          label={({ type }) => type}
-                        >
-                          {typeStats.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <ChartContainer config={chartConfig} className="h-[400px]">
+                    <RechartsPieChart>
+                      <Pie
+                        data={typeStats}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={120}
+                        paddingAngle={5}
+                        dataKey="count"
+                        nameKey="type"
+                        label={({ type }) => type}
+                      >
+                        {typeStats.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </RechartsPieChart>
+                  </ChartContainer>
                 ) : !isLoading ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No content distribution data available.
