@@ -188,9 +188,14 @@ const AdManager: React.FC = () => {
                   <Input
                     id="client-id"
                     value={settingsData.auto_ads_client_id}
-                    onChange={(e) => 
-                      setSettingsData(prev => ({ ...prev, auto_ads_client_id: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      // Remove "client=" prefix if user pastes it
+                      let value = e.target.value;
+                      if (value.startsWith('client=')) {
+                        value = value.replace('client=', '');
+                      }
+                      setSettingsData(prev => ({ ...prev, auto_ads_client_id: value }));
+                    }}
                     placeholder="ca-pub-1234567890123456"
                   />
                 </div>
