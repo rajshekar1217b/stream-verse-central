@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_settings: {
+        Row: {
+          auto_ads_client_id: string | null
+          auto_ads_enabled: boolean
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_ads_client_id?: string | null
+          auto_ads_enabled?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_ads_client_id?: string | null
+          auto_ads_enabled?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ads: {
+        Row: {
+          ad_code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          placement: string
+          updated_at: string
+        }
+        Insert: {
+          ad_code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          placement: string
+          updated_at?: string
+        }
+        Update: {
+          ad_code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          placement?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
