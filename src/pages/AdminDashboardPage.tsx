@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { getAllContent, addContent, updateContent, deleteContent } from '@/services/api';
 import { Content } from '@/types';
-import { Plus, LogOut, BarChart } from 'lucide-react';
+import { Plus, LogOut, BarChart, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import AdminContentList from '@/components/admin/AdminContentList';
 import AdminContentForm from '@/components/admin/AdminContentForm';
 import AdminTmdbImport from '@/components/admin/AdminTmdbImport';
 import AnalyticsOverview from '@/components/admin/AnalyticsOverview';
+import AdManager from '@/components/admin/AdManager';
 
 const AdminDashboardPage: React.FC = () => {
   const [contents, setContents] = useState<Content[]>([]);
@@ -22,6 +23,7 @@ const AdminDashboardPage: React.FC = () => {
   const [selectedContent, setSelectedContent] = useState<Content | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contentToDelete, setContentToDelete] = useState<string | null>(null);
+  const [showAdManager, setShowAdManager] = useState(false);
   
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -189,19 +191,36 @@ const AdminDashboardPage: React.FC = () => {
               <BarChart className="mr-2 h-4 w-4" />
               Analytics
             </Button>
-            
+
             <Button
-              onClick={toggleForm}
-              className={isFormVisible ? 'bg-gray-700' : 'bg-ott-accent hover:bg-ott-accent/80'}
+              onClick={() => setShowAdManager(!showAdManager)}
+              className={showAdManager ? 'bg-gray-700' : 'bg-green-600 hover:bg-green-700'}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              {isFormVisible ? 'Cancel' : 'Add Content'}
+              <Megaphone className="mr-2 h-4 w-4" />
+              {showAdManager ? 'Back to Content' : 'Ad Manager'}
             </Button>
+            
+            {!showAdManager && (
+              <Button
+                onClick={toggleForm}
+                className={isFormVisible ? 'bg-gray-700' : 'bg-ott-accent hover:bg-ott-accent/80'}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {isFormVisible ? 'Cancel' : 'Add Content'}
+              </Button>
+            )}
           </div>
         </div>
         
-        {/* Analytics Overview - Only show when not editing */}
-        {!isFormVisible && (
+        {/* Ad Manager */}
+        {showAdManager && (
+          <div className="bg-ott-card p-6 rounded-lg">
+            <AdManager />
+          </div>
+        )}
+
+        {/* Analytics Overview - Only show when not editing and not in ad manager */}
+        {!isFormVisible && !showAdManager && (
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4">Analytics Overview</h2>
             <AnalyticsOverview />
@@ -209,10 +228,10 @@ const AdminDashboardPage: React.FC = () => {
         )}
         
         {/* TMDB Import Section */}
-        {!isFormVisible && <AdminTmdbImport onImport={handleTmdbImport} />}
+        {!isFormVisible && !showAdManager && <AdminTmdbImport onImport={handleTmdbImport} />}
         
         {/* Content Form (visible when adding/editing) */}
-        {isFormVisible && (
+        {isFormVisible && !showAdManager && (
           <AdminContentForm
             key={selectedContent?.id || 'new'}
             content={selectedContent}
@@ -222,7 +241,7 @@ const AdminDashboardPage: React.FC = () => {
         )}
         
         {/* Content List */}
-        {!isFormVisible && (
+        {!isFormVisible && !showAdManager && (
           <div className="bg-ott-card p-6 rounded-lg">
             <h2 className="text-xl font-bold mb-6">Content Library</h2>
             

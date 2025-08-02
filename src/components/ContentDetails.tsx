@@ -3,6 +3,7 @@ import React from 'react';
 import { Content } from '@/types';
 import { Calendar, Clock, Star } from 'lucide-react';
 import ViewCount from '@/components/ViewCount';
+import AdDisplay from '@/components/ads/AdDisplay';
 
 interface ContentDetailsProps {
   content: Content;
@@ -43,10 +44,14 @@ const ContentDetails: React.FC<ContentDetailsProps> = ({ content }) => {
         </div>
       </div>
 
+      <AdDisplay placement="before_content" />
+      
       <div>
         <h2 className="text-lg font-medium mb-2">Overview</h2>
         <p className="text-muted-foreground">{content.overview}</p>
       </div>
+
+      <AdDisplay placement="after_content" />
     </div>
   );
 };
