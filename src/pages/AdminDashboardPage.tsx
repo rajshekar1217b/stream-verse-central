@@ -123,12 +123,26 @@ const AdminDashboardPage: React.FC = () => {
   const handleTmdbImport = async (importedContent: Content) => {
     try {
       console.log('Importing TMDB content:', importedContent);
+      
+      // Check if content already exists
+      const existingContent = contents.find(content => content.id === importedContent.id);
+      if (existingContent) {
+        toast.error(`"${importedContent.title}" already exists in your library`);
+        return;
+      }
+      
       const newContent = await addContent(importedContent);
       setContents([...contents, newContent]);
       toast.success(`"${importedContent.title}" imported successfully`);
     } catch (error) {
       console.error('Error importing TMDB content:', error);
-      toast.error('Failed to import content');
+      
+      // Check if it's a duplicate key error
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        toast.error(`"${importedContent.title}" already exists in your library`);
+      } else {
+        toast.error('Failed to import content');
+      }
     }
   };
   
