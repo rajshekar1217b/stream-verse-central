@@ -24,11 +24,14 @@ const FeaturedBanner: React.FC<FeaturedBannerProps> = ({ content }) => {
     navigate(`/content/${content.slug || content.id}`);
   };
 
+  // Use backdrop if available, otherwise fall back to poster
+  const backgroundImage = content.backdropPath || content.posterPath;
+
   return (
-    <div className="relative w-full h-[60vh] sm:h-[70vh] lg:h-[80vh] mb-4 sm:mb-8">
+    <div className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] mb-4 sm:mb-8">
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${content.backdropPath})` }}
+        style={{ backgroundImage: `url(${backgroundImage})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-ott-background via-transparent to-transparent" />
