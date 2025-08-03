@@ -8,6 +8,7 @@ import ContentCard from '@/components/ui/ContentCard';
 import ContentFilter from '@/components/ContentFilter';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import AdDisplay from '@/components/ads/AdDisplay';
 
 const TVShowsPage: React.FC = () => {
   const [tvShows, setTvShows] = useState<Content[]>([]);
@@ -100,8 +101,10 @@ const TVShowsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      <AdDisplay placement="header" />
 
       <main className="container mx-auto px-4 pt-24 pb-16">
+        <AdDisplay placement="before_content" />
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">TV Shows</h1>
           <div className="text-sm text-muted-foreground">
@@ -161,8 +164,11 @@ const TVShowsPage: React.FC = () => {
             )}
           </div>
         )}
+        
+        <AdDisplay placement="after_content" />
       </main>
 
+      <AdDisplay placement="footer" />
       <Footer />
     </div>
   );

@@ -5,6 +5,7 @@ import ContentCarousel from '@/components/ContentCarousel';
 import FeaturedBanner from '@/components/FeaturedBanner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import AdDisplay from '@/components/ads/AdDisplay';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -172,15 +173,18 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-ott-background">
       <Header />
+      <AdDisplay placement="header" />
       
       <main>
         {/* Featured Banner */}
         {featuredContent && <FeaturedBanner content={featuredContent} />}
         
+        <AdDisplay placement="before_content" />
+        
         {/* Content Sections */}
         <div className="container mx-auto px-4 pb-16">
           {categories.length > 0 ? (
-            categories.map((category) => {
+            categories.map((category, index) => {
               // Ensure category has valid contents array
               const validContents = category.contents?.filter(content => content && content.id) || [];
               
@@ -189,11 +193,16 @@ const HomePage: React.FC = () => {
               }
               
               return (
-                <ContentCarousel 
-                  key={category.id} 
-                  title={category.name} 
-                  contents={validContents} 
-                />
+                <React.Fragment key={category.id}>
+                  <ContentCarousel 
+                    title={category.name} 
+                    contents={validContents} 
+                  />
+                  {/* Add between_content ads after every 2nd category */}
+                  {index > 0 && (index + 1) % 2 === 0 && (
+                    <AdDisplay placement="between_content" />
+                  )}
+                </React.Fragment>
               );
             })
           ) : (
@@ -201,9 +210,12 @@ const HomePage: React.FC = () => {
               <p className="text-muted-foreground">No content found. Add some content to get started!</p>
             </div>
           )}
+          
+          <AdDisplay placement="after_content" />
         </div>
       </main>
       
+      <AdDisplay placement="footer" />
       <Footer />
     </div>
   );

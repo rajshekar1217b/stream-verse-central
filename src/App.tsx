@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { useEffect } from "react";
 import { ensureDatabaseStructure } from "@/utils/supabaseUtils";
+import AutoAds from "@/components/ads/AutoAds";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -40,6 +41,7 @@ const App = () => {
       <ThemeProvider>
         <AuthProvider>
           <TooltipProvider>
+            <AutoAds />
             <Toaster />
             <Sonner />
             <BrowserRouter>
