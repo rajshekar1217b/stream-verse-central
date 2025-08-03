@@ -6,9 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ensureDatabaseStructure } from "@/utils/supabaseUtils";
-import LaunchScreen from "@/components/LaunchScreen";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -25,8 +24,6 @@ import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [showLaunchScreen, setShowLaunchScreen] = useState(true);
-
   // Check and ensure database structure when the app loads
   useEffect(() => {
     ensureDatabaseStructure()
@@ -37,14 +34,6 @@ const App = () => {
       })
       .catch(console.error);
   }, []);
-
-  const handleLaunchComplete = () => {
-    setShowLaunchScreen(false);
-  };
-
-  if (showLaunchScreen) {
-    return <LaunchScreen onComplete={handleLaunchComplete} />;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>

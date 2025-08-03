@@ -13,6 +13,12 @@ function parseJsonArray<T>(jsonValue: any): T[] {
     }
     // Handle case where jsonValue is already an object (but not array)
     if (typeof jsonValue === 'object' && jsonValue !== null) {
+      // If it's an object but not an array, check if it can be converted to an array
+      // This handles cases where objects are passed instead of JSON strings
+      if (Object.prototype.toString.call(jsonValue) === '[object Object]') {
+        console.warn('Received object instead of JSON string or array:', jsonValue);
+        return [];
+      }
       return [];
     }
     // Handle string case - parse JSON
@@ -23,6 +29,8 @@ function parseJsonArray<T>(jsonValue: any): T[] {
     return [];
   } catch (e) {
     console.error('Error parsing JSON array:', e);
+    console.error('Problematic value:', jsonValue);
+    console.error('Value type:', typeof jsonValue);
     return [];
   }
 }
