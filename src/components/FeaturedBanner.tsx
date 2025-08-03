@@ -16,12 +16,12 @@ const FeaturedBanner: React.FC<FeaturedBannerProps> = ({ content }) => {
     if (content.trailerUrl) {
       window.open(content.trailerUrl, '_blank');
     } else {
-      navigate(`/content/${content.id}`);
+      navigate(`/content/${content.slug || content.id}`);
     }
   };
 
   const handleMore = () => {
-    navigate(`/content/${content.id}`);
+    navigate(`/content/${content.slug || content.id}`);
   };
 
   return (

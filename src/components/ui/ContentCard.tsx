@@ -18,7 +18,7 @@ const ContentCard: React.FC<ContentCardProps> = ({ content, size = 'medium' }) =
   };
 
   return (
-    <Link to={`/content/${content.id}`} className="content-card group">
+    <Link to={`/content/${content.slug || content.id}`} className="content-card group">
       <div className={`relative ${sizeClasses[size]} floating-element`}>
         <img
           src={content.posterPath}

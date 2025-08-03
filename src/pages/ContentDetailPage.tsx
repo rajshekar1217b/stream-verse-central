@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getContentById } from '@/services/api';
+import { getContentBySlug } from '@/services/api';
 import { Content } from '@/types';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -45,8 +45,8 @@ const ContentDetailPage: React.FC = () => {
       }
     };
 
-    if (id && content) {
-      trackContentView(id);
+    if (content && content.id) {
+      trackContentView(content.id);
     }
   }, [id, content]);
 
@@ -62,8 +62,8 @@ const ContentDetailPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
         
-        console.log('Fetching content with ID:', id);
-        const contentData = await getContentById(id);
+        console.log('Fetching content with slug/ID:', id);
+        const contentData = await getContentBySlug(id);
         
         if (contentData) {
           console.log("Content data loaded successfully:", contentData.title);

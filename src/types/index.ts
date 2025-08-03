@@ -42,6 +42,7 @@ export type Person = CastMember;
 export interface Content {
   id: string;
   title: string;
+  slug?: string;
   overview: string;
   posterPath: string;
   backdropPath?: string;

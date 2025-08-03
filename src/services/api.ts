@@ -68,6 +68,7 @@ export const getContentById = async (id: string): Promise<Content | null> => {
     const content: Content = {
       id: data.id,
       title: data.title,
+      slug: data.slug,
       overview: data.overview || '',
       posterPath: jsonToString(data.poster_path),
       backdropPath: jsonToString(data.backdrop_path),
@@ -139,6 +140,104 @@ export const getContentById = async (id: string): Promise<Content | null> => {
   }
 };
 
+// Get content by slug or ID (for backward compatibility)
+export const getContentBySlug = async (slug: string): Promise<Content | null> => {
+  try {
+    console.log('Fetching content by slug:', slug);
+    
+    // Try to find by slug first
+    let query = supabase
+      .from('contents')
+      .select('*')
+      .eq('slug', slug);
+    
+    let { data, error } = await query.single();
+
+    // If not found by slug, try by ID for backward compatibility
+    if (error && error.code === 'PGRST116') {
+      console.log('Content not found by slug, trying by ID...');
+      query = supabase
+        .from('contents')
+        .select('*')
+        .eq('id', slug);
+      
+      const result = await query.single();
+      data = result.data;
+      error = result.error;
+    }
+
+    if (error) {
+      console.error('Error fetching content:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.log('No content found for slug/ID:', slug);
+      return null;
+    }
+
+    console.log('Raw content data from DB:', data);
+
+    // Parse the content data (same logic as getContentById)
+    const content: Content = {
+      id: data.id,
+      title: data.title,
+      slug: data.slug,
+      overview: data.overview || '',
+      posterPath: jsonToString(data.poster_path),
+      backdropPath: jsonToString(data.backdrop_path),
+      releaseDate: jsonToString(data.release_date),
+      rating: Number(data.rating) || 0,
+      duration: jsonToString(data.duration),
+      type: data.type as 'movie' | 'tv',
+      genres: Array.isArray(data.genres) ? data.genres : 
+              typeof data.genres === 'string' ? JSON.parse(data.genres) : [],
+      trailerUrl: jsonToString(data.trailer_url),
+      watchProviders: parseJsonArray(data.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(data.cast_info) as CastMember[],
+      images: parseJsonArray(data.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(data.embed_videos) as { url: string; title: string }[],
+      seasons: []
+    };
+
+    // For TV shows, process seasons
+    if (content.type === 'tv' && data.seasons) {
+      const seasonsData = parseJsonArray(data.seasons);
+      content.seasons = seasonsData.map((season: any) => {
+        let episodes: Episode[] = [];
+        if (season.episodes) {
+          episodes = parseJsonArray(season.episodes);
+        }
+
+        return {
+          id: season.id,
+          name: season.name,
+          seasonNumber: season.seasonNumber,
+          episodeCount: season.episodeCount || episodes?.length || 0,
+          posterPath: season.posterPath,
+          airDate: season.airDate,
+          overview: season.overview,
+          episodes: episodes.map((episode: any) => ({
+            id: episode.id,
+            title: episode.title || episode.name,
+            episodeNumber: episode.episodeNumber || episode.episode_number,
+            overview: episode.overview,
+            airDate: episode.airDate || episode.air_date,
+            duration: episode.duration || episode.runtime ? `${episode.runtime}min` : undefined,
+            rating: episode.rating || episode.vote_average,
+            stillPath: episode.stillPath || episode.still_path
+          }))
+        };
+      });
+    }
+
+    return content;
+  } catch (error) {
+    console.error('Error in getContentBySlug:', error);
+    return null;
+  }
+};
+
 export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day' | 'week' = 'day'): Promise<Content[]> => {
   try {
     const { data, error } = await supabase
@@ -155,6 +254,7 @@ export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day'
     const contentList: Content[] = data.map((item) => ({
       id: item.id,
       title: item.title,
+      slug: item.slug,
       overview: item.overview || '',
       posterPath: jsonToString(item.poster_path),
       backdropPath: jsonToString(item.backdrop_path),
@@ -193,6 +293,7 @@ export const getAllContent = async (): Promise<Content[]> => {
     const contentList: Content[] = data.map((item) => ({
       id: item.id,
       title: item.title,
+      slug: item.slug,
       overview: item.overview || '',
       posterPath: jsonToString(item.poster_path),
       backdropPath: jsonToString(item.backdrop_path),
@@ -330,6 +431,7 @@ export const searchContent = async (query: string): Promise<Content[]> => {
     const contentList: Content[] = data.map((item) => ({
       id: item.id,
       title: item.title,
+      slug: item.slug,
       overview: item.overview || '',
       posterPath: jsonToString(item.poster_path),
       backdropPath: jsonToString(item.backdrop_path),
