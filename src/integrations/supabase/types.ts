@@ -198,6 +198,7 @@ export type Database = {
           rating: number | null
           release_date: string | null
           seasons: Json | null
+          slug: string | null
           status: string | null
           title: string
           trailer_url: string | null
@@ -219,6 +220,7 @@ export type Database = {
           rating?: number | null
           release_date?: string | null
           seasons?: Json | null
+          slug?: string | null
           status?: string | null
           title: string
           trailer_url?: string | null
@@ -240,6 +242,7 @@ export type Database = {
           rating?: number | null
           release_date?: string | null
           seasons?: Json | null
+          slug?: string | null
           status?: string | null
           title?: string
           trailer_url?: string | null
@@ -286,6 +289,14 @@ export type Database = {
       create_contents_table: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      ensure_unique_slug: {
+        Args: { title: string; content_id?: string }
+        Returns: string
+      }
+      generate_slug: {
+        Args: { title: string }
+        Returns: string
       }
       seed_initial_categories: {
         Args: Record<PropertyKey, never>
