@@ -264,11 +264,11 @@ export const getTrendingContent = async (type: 'movie' | 'tv', timeWindow: 'day'
       type: item.type as 'movie' | 'tv',
       genres: Array.isArray(item.genres) ? item.genres : [],
       trailerUrl: jsonToString(item.trailer_url),
-      watchProviders: parseJsonArray(jsonToString(item.watch_providers)) as WatchProvider[],
-      cast: parseJsonArray(jsonToString(item.cast_info)) as CastMember[],
-      images: parseJsonArray(jsonToString(item.images)) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(jsonToString(item.embed_videos)) as { url: string; title: string }[],
-      seasons: parseJsonArray(jsonToString(item.seasons)) as any[],
+      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(item.cast_info) as CastMember[],
+      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
+      seasons: parseJsonArray(item.seasons) as any[],
     }));
 
     return contentList;
@@ -303,11 +303,11 @@ export const getAllContent = async (): Promise<Content[]> => {
       type: item.type as 'movie' | 'tv',
       genres: Array.isArray(item.genres) ? item.genres : [],
       trailerUrl: jsonToString(item.trailer_url),
-      watchProviders: parseJsonArray(jsonToString(item.watch_providers)) as WatchProvider[],
-      cast: parseJsonArray(jsonToString(item.cast_info)) as CastMember[],
-      images: parseJsonArray(jsonToString(item.images)) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(jsonToString(item.embed_videos)) as { url: string; title: string }[],
-      seasons: parseJsonArray(jsonToString(item.seasons)) as any[],
+      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(item.cast_info) as CastMember[],
+      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
+      seasons: parseJsonArray(item.seasons) as any[],
     }));
 
     return contentList;
@@ -441,11 +441,11 @@ export const searchContent = async (query: string): Promise<Content[]> => {
       type: item.type as 'movie' | 'tv',
       genres: Array.isArray(item.genres) ? item.genres : [],
       trailerUrl: jsonToString(item.trailer_url),
-      watchProviders: parseJsonArray(jsonToString(item.watch_providers)) as WatchProvider[],
-      cast: parseJsonArray(jsonToString(item.cast_info)) as CastMember[],
-      images: parseJsonArray(jsonToString(item.images)) as { path: string; type: 'poster' | 'backdrop' }[],
-      embedVideos: parseJsonArray(jsonToString(item.embed_videos)) as { url: string; title: string }[],
-      seasons: parseJsonArray(jsonToString(item.seasons)) as any[],
+      watchProviders: parseJsonArray(item.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(item.cast_info) as CastMember[],
+      images: parseJsonArray(item.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(item.embed_videos) as { url: string; title: string }[],
+      seasons: parseJsonArray(item.seasons) as any[],
     }));
 
     return contentList;
