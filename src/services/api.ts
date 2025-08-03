@@ -352,7 +352,27 @@ export const addContent = async (content: Content): Promise<Content> => {
       throw error;
     }
 
-    return content;
+    // Return the actual database response converted to our format
+    return {
+      id: data.id,
+      title: data.title,
+      slug: data.slug,
+      overview: data.overview || '',
+      posterPath: jsonToString(data.poster_path),
+      backdropPath: jsonToString(data.backdrop_path),
+      releaseDate: jsonToString(data.release_date),
+      rating: Number(data.rating) || 0,
+      duration: jsonToString(data.duration),
+      type: data.type as 'movie' | 'tv',
+      genres: Array.isArray(data.genres) ? data.genres : [],
+      trailerUrl: jsonToString(data.trailer_url),
+      watchProviders: parseJsonArray(data.watch_providers) as WatchProvider[],
+      cast: parseJsonArray(data.cast_info) as CastMember[],
+      images: parseJsonArray(data.images) as { path: string; type: 'poster' | 'backdrop' }[],
+      embedVideos: parseJsonArray(data.embed_videos) as { url: string; title: string }[],
+      seasons: parseJsonArray(data.seasons) as any[],
+      status: jsonToString(data.status)
+    };
   } catch (error) {
     console.error('Error in addContent:', error);
     throw error;
