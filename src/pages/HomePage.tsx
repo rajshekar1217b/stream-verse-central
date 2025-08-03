@@ -192,11 +192,20 @@ const HomePage: React.FC = () => {
                 return null; // Skip empty categories
               }
               
+              // Determine default sort based on category name
+              const getDefaultSort = (categoryName: string) => {
+                if (categoryName.toLowerCase().includes('top rated')) {
+                  return 'rating'; // Keep rating sort for top rated
+                }
+                return 'newest'; // Default to newest for all other categories
+              };
+              
               return (
                 <React.Fragment key={category.id}>
                   <ContentCarousel 
                     title={category.name} 
-                    contents={validContents} 
+                    contents={validContents}
+                    defaultSort={getDefaultSort(category.name)}
                   />
                   {/* Add between_content ads after every 2nd category */}
                   {index > 0 && (index + 1) % 2 === 0 && (

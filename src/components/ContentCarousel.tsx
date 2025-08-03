@@ -14,11 +14,12 @@ import {
 interface ContentCarouselProps {
   title: string;
   contents: Content[];
+  defaultSort?: string;
 }
 
-const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents }) => {
+const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents, defaultSort = 'default' }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
-  const [sortBy, setSortBy] = useState<string>('default');
+  const [sortBy, setSortBy] = useState<string>(defaultSort);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
@@ -29,24 +30,27 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents }) =>
 
   // Sort contents based on selected option
   const sortedContents = React.useMemo(() => {
-    if (sortBy === 'default') return contents;
+    let currentContents = [...contents];
     
-    const sorted = [...contents].sort((a, b) => {
-      switch (sortBy) {
-        case 'rating':
-          return b.rating - a.rating;
-        case 'title':
-          return a.title.localeCompare(b.title);
-        case 'newest':
-          return new Date(b.releaseDate || 0).getTime() - new Date(a.releaseDate || 0).getTime();
-        case 'oldest':
-          return new Date(a.releaseDate || 0).getTime() - new Date(b.releaseDate || 0).getTime();
-        default:
-          return 0;
-      }
-    });
+    // Apply sorting based on sortBy value
+    if (sortBy !== 'default') {
+      currentContents = currentContents.sort((a, b) => {
+        switch (sortBy) {
+          case 'rating':
+            return b.rating - a.rating;
+          case 'title':
+            return a.title.localeCompare(b.title);
+          case 'newest':
+            return new Date(b.releaseDate || 0).getTime() - new Date(a.releaseDate || 0).getTime();
+          case 'oldest':
+            return new Date(a.releaseDate || 0).getTime() - new Date(b.releaseDate || 0).getTime();
+          default:
+            return 0;
+        }
+      });
+    }
     
-    return sorted;
+    return currentContents;
   }, [contents, sortBy]);
 
   if (!contents.length) {
