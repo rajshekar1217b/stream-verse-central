@@ -100,18 +100,18 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents }) =>
         
         <button 
           onClick={() => scroll('left')}
-          className="absolute left-4 top-1/2 -translate-y-1/2 backdrop-blur-xl bg-black/30 hover:bg-black/50 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 border border-white/20"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 backdrop-blur-xl bg-black/30 hover:bg-black/50 p-2 sm:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 border border-white/20"
           aria-label="Scroll left"
         >
-          <ChevronLeft className="text-white h-6 w-6" />
+          <ChevronLeft className="text-white h-4 w-4 sm:h-6 sm:w-6" />
         </button>
         
         <button 
           onClick={() => scroll('right')}
-          className="absolute right-4 top-1/2 -translate-y-1/2 backdrop-blur-xl bg-black/30 hover:bg-black/50 p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 border border-white/20"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 backdrop-blur-xl bg-black/30 hover:bg-black/50 p-2 sm:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 border border-white/20"
           aria-label="Scroll right"
         >
-          <ChevronRight className="text-white h-6 w-6" />
+          <ChevronRight className="text-white h-4 w-4 sm:h-6 sm:w-6" />
         </button>
       </div>
     </div>
