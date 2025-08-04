@@ -21,12 +21,12 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents, defa
   const carouselRef = useRef<HTMLDivElement>(null);
   const [sortBy, setSortBy] = useState<string>(defaultSort);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = React.useCallback((direction: 'left' | 'right') => {
     if (!carouselRef.current) return;
 
-    const scrollAmount = direction === 'left' ? -400 : 400;
+    const scrollAmount = direction === 'left' ? -500 : 500;
     carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-  };
+  }, []);
 
   // Sort contents based on selected option
   const sortedContents = React.useMemo(() => {
@@ -93,13 +93,18 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, contents, defa
       <div className="relative group">
         <div 
           ref={carouselRef}
-          className="content-carousel overflow-x-auto scrollbar-none"
+          className="flex gap-4 overflow-x-auto scrollbar-none scroll-smooth pb-2"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch'
+          }}
         >
-          <div className="content-carousel-track">
-            {sortedContents.map((content) => (
-              <ContentCard key={content.id} content={content} />
-            ))}
-          </div>
+          {sortedContents.map((content) => (
+            <div key={content.id} className="flex-shrink-0">
+              <ContentCard content={content} />
+            </div>
+          ))}
         </div>
         
         <button 

@@ -6,30 +6,25 @@ import FeaturedBanner from '@/components/FeaturedBanner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AdDisplay from '@/components/ads/AdDisplay';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const HomePage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [allContent, setAllContent] = useState<Content[]>([]);
   const [featuredContent, setFeaturedContent] = useState<Content | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
         setError(null);
-        
-        console.log('Fetching homepage data...');
         
         // Get all content first
         const allContentData = await getAllContent();
-        console.log(`Loaded ${allContentData.length} total content items`);
         setAllContent(allContentData);
         
-        // Get all categories with their contents
+        // Get all categories with their contents  
         const categoriesData = await getCategories();
         
         // Create genre-based categories from all content
@@ -103,8 +98,6 @@ const HomePage: React.FC = () => {
         console.error('Error fetching homepage data:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to load content';
         setError(errorMessage);
-      } finally {
-        setIsLoading(false);
       }
     };
     
@@ -140,17 +133,6 @@ const HomePage: React.FC = () => {
     return genreCategories.sort((a, b) => b.contents.length - a.contents.length);
   };
   
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-ott-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-ott-accent" />
-          <p className="text-muted-foreground">Loading content...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-ott-background">
